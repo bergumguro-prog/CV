@@ -2,8 +2,13 @@
 
 {% block content %}
     {% if profil %}
-        <h1>{{ profil.navn }}</h1>
-        {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
+        <div class="intro">
+            {% if profil.bilde %}<img src="{{ profil.bilde.url }}" alt="{{ profil.navn }}">{% endif %}
+            <div>
+                <h1>{{ profil.navn }}</h1>
+                {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
+            </div>
+        </div>
     {% else %}
         <h1>Velkommen</h1>
         <p>Legg inn profilen din i <a href="{% url 'admin:index' %}">admin</a>.</p>
