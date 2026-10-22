@@ -20,5 +20,25 @@
                 {% endfor %}
             </ul>
         {% endif %}
+
+        {% with egenskaper=oppforing.egenskaper.all %}
+            {% if egenskaper %}
+                <h4>Egenskaper</h4>
+                <ul class="utvidbar">
+                    {% for e in egenskaper %}
+                        <li>
+                            {% if e.forklaring %}
+                                <details>
+                                    <summary>{{ e.egenskap }}</summary>
+                                    {{ e.forklaring|linebreaks }}
+                                </details>
+                            {% else %}
+                                {{ e.egenskap }}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
     </details>
 {% endif %}
