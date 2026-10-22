@@ -1,3 +1,5 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+def forside(request):
+    return render(request, "profil/forside.html")
