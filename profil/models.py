@@ -23,10 +23,15 @@ class Erfaring(models.Model):
     fra_dato = models.DateField()
     til_dato = models.DateField(null=True, blank=True, help_text="La stå tom hvis du jobber der nå.")
     beskrivelse = models.TextField(blank=True)
+    detaljer = models.TextField(blank=True, help_text="Vises når man trykker «Vis mer».")
 
     class Meta:
         verbose_name_plural = "erfaringer"
         ordering = ["-fra_dato"]
+
+    @property
+    def har_detaljer(self):
+        return bool(self.detaljer)
 
     def __str__(self):
         return f"{self.stilling}, {self.arbeidsgiver}"
@@ -38,10 +43,15 @@ class Utdanning(models.Model):
     fra_dato = models.DateField()
     til_dato = models.DateField(null=True, blank=True, help_text="La stå tom hvis du studerer nå.")
     beskrivelse = models.TextField(blank=True)
+    detaljer = models.TextField(blank=True, help_text="Vises når man trykker «Vis mer».")
 
     class Meta:
         verbose_name_plural = "utdanninger"
         ordering = ["-fra_dato"]
+
+    @property
+    def har_detaljer(self):
+        return bool(self.detaljer)
 
     def __str__(self):
         return f"{self.studie}, {self.skole}"
@@ -84,10 +94,15 @@ class Verv(models.Model):
     fra_dato = models.DateField()
     til_dato = models.DateField(null=True, blank=True, help_text="La stå tom hvis vervet pågår.")
     beskrivelse = models.TextField(blank=True)
+    detaljer = models.TextField(blank=True, help_text="Vises når man trykker «Vis mer».")
 
     class Meta:
         verbose_name_plural = "verv"
         ordering = ["-fra_dato"]
+
+    @property
+    def har_detaljer(self):
+        return bool(self.detaljer)
 
     def __str__(self):
         return f"{self.rolle}, {self.organisasjon}"

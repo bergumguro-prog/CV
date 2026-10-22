@@ -45,6 +45,18 @@ class SideTester(TestCase):
         self.assertContains(response, "Django")
         self.assertContains(response, "Leder, Abakus")
 
+    def test_vis_mer_bare_med_detaljer(self):
+        Erfaring.objects.create(stilling="Uten", arbeidsgiver="A", fra_dato=date(2023, 1, 1))
+        response = self.client.get(reverse("profil:forside"))
+        self.assertNotContains(response, 'class="mer"')
+
+        Erfaring.objects.create(
+            stilling="Med", arbeidsgiver="B", fra_dato=date(2024, 1, 1), detaljer="Ledet et team på seks."
+        )
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, 'class="mer"', count=1)
+        self.assertContains(response, "Ledet et team på seks.")
+
     def test_prosjektsiden_viser_prosjekter(self):
         Prosjekt.objects.create(tittel="CV-side", beskrivelse="Laget med Django", lenke="https://github.com")
         response = self.client.get(reverse("profil:prosjekter"))

@@ -22,6 +22,7 @@
                     <h3>{{ erfaring.stilling }}, {{ erfaring.arbeidsgiver }}</h3>
                     <p>{{ erfaring.fra_dato|date:"Y" }} – {{ erfaring.til_dato|date:"Y"|default:"nå" }}</p>
                     {{ erfaring.beskrivelse|linebreaks }}
+                    {% include "profil/_mer.html" with oppforing=erfaring %}
                 </article>
             {% endfor %}
         </section>
@@ -35,6 +36,7 @@
                     <h3>{{ v.rolle }}, {{ v.organisasjon }}</h3>
                     <p>{{ v.fra_dato|date:"Y" }} – {{ v.til_dato|date:"Y"|default:"nå" }}</p>
                     {{ v.beskrivelse|linebreaks }}
+                    {% include "profil/_mer.html" with oppforing=v %}
                 </article>
             {% endfor %}
         </section>
@@ -48,6 +50,7 @@
                     <h3>{{ utdanning.studie }}, {{ utdanning.skole }}</h3>
                     <p>{{ utdanning.fra_dato|date:"Y" }} – {{ utdanning.til_dato|date:"Y"|default:"nå" }}</p>
                     {{ utdanning.beskrivelse|linebreaks }}
+                    {% include "profil/_mer.html" with oppforing=utdanning %}
                 </article>
             {% endfor %}
         </section>
