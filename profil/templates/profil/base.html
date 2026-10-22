@@ -7,7 +7,12 @@
 </head>
 <body>
     <header>
-        <a href="{% url 'profil:forside' %}">CV</a>
+        <nav>
+            <a href="{% url 'profil:forside' %}">CV</a>
+            <a href="{% url 'profil:om_meg' %}">Om meg</a>
+            <a href="{% url 'profil:prosjekter' %}">Prosjekter</a>
+            <a href="{% url 'profil:kontakt' %}">Kontakt</a>
+        </nav>
     </header>
 
     <main>
