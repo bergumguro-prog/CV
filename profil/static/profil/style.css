@@ -107,6 +107,26 @@ article p:first-of-type {
     font-size: 0.9rem;
 }
 
+details.mer > summary {
+    cursor: pointer;
+    color: var(--aksent);
+    font-size: 0.9rem;
+}
+
+details.mer > summary::after {
+    content: "Vis mer";
+}
+
+details.mer[open] > summary::after {
+    content: "Vis mindre";
+}
+
+details.mer[open] {
+    margin-bottom: 16px;
+    padding-left: 12px;
+    border-left: 2px solid var(--linje);
+}
+
 ul {
     padding-left: 20px;
 }
