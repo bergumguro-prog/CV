@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning, Verv
+from .models import Erfaring, Fag, Ferdighet, Profil, Prosjekt, Utdanning, Verv
 
 
 class ModellTester(TestCase):
@@ -18,6 +18,8 @@ class ModellTester(TestCase):
         self.assertEqual(str(Ferdighet(navn="Python")), "Python")
         self.assertEqual(str(Prosjekt(tittel="CV-side")), "CV-side")
         self.assertEqual(str(Verv(rolle="Leder", organisasjon="Abakus")), "Leder, Abakus")
+        self.assertEqual(str(Fag(emnekode="TDT4100", navn="OOP")), "TDT4100 OOP")
+        self.assertEqual(str(Fag(navn="OOP")), "OOP")
 
     def test_erfaring_nyeste_forst(self):
         Erfaring.objects.create(stilling="Gammel", arbeidsgiver="A", fra_dato=date(2020, 1, 1))
@@ -56,6 +58,17 @@ class SideTester(TestCase):
         response = self.client.get(reverse("profil:forside"))
         self.assertContains(response, 'class="mer"', count=1)
         self.assertContains(response, "Ledet et team på seks.")
+
+    def test_fag_under_utdanning(self):
+        utdanning = Utdanning.objects.create(studie="Datateknologi", skole="NTNU", fra_dato=date(2025, 1, 1))
+        Fag.objects.create(utdanning=utdanning, emnekode="TDT4100", navn="Objektorientert programmering",
+                           beskrivelse="Java og testing.")
+        Fag.objects.create(utdanning=utdanning, navn="Uten beskrivelse")
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, 'class="mer"', count=1)
+        self.assertContains(response, "<summary>TDT4100 Objektorientert programmering</summary>", html=True)
+        self.assertContains(response, "Java og testing.")
+        self.assertContains(response, "Uten beskrivelse")
 
     def test_prosjektsiden_viser_prosjekter(self):
         Prosjekt.objects.create(tittel="CV-side", beskrivelse="Laget med Django", lenke="https://github.com")

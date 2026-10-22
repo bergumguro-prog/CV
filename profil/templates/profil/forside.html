@@ -50,7 +50,7 @@
                     <h3>{{ utdanning.studie }}, {{ utdanning.skole }}</h3>
                     <p>{{ utdanning.fra_dato|date:"Y" }} – {{ utdanning.til_dato|date:"Y"|default:"nå" }}</p>
                     {{ utdanning.beskrivelse|linebreaks }}
-                    {% include "profil/_mer.html" with oppforing=utdanning %}
+                    {% include "profil/_mer.html" with oppforing=utdanning fag=utdanning.fag.all %}
                 </article>
             {% endfor %}
         </section>

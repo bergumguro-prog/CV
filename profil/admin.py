@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning, Verv
+from .models import Erfaring, Fag, Ferdighet, Profil, Prosjekt, Utdanning, Verv
 
 
 @admin.register(Profil)
@@ -18,9 +18,15 @@ class VervAdmin(admin.ModelAdmin):
     list_display = ["rolle", "organisasjon", "fra_dato", "til_dato"]
 
 
+class FagInline(admin.StackedInline):
+    model = Fag
+    extra = 0
+
+
 @admin.register(Utdanning)
 class UtdanningAdmin(admin.ModelAdmin):
     list_display = ["studie", "skole", "fra_dato", "til_dato"]
+    inlines = [FagInline]
 
 
 @admin.register(Ferdighet)

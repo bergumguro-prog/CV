@@ -127,6 +127,29 @@ details.mer[open] {
     border-left: 2px solid var(--linje);
 }
 
+h4 {
+    margin: 16px 0 4px;
+    font-size: 0.95rem;
+}
+
+ul.utvidbar {
+    list-style: none;
+    padding-left: 0;
+}
+
+ul.utvidbar li {
+    padding: 4px 0;
+}
+
+ul.utvidbar summary {
+    cursor: pointer;
+}
+
+ul.utvidbar details p {
+    margin: 4px 0 8px 18px;
+    font-size: 0.95rem;
+}
+
 ul {
     padding-left: 20px;
 }

@@ -2,5 +2,23 @@
     <details class="mer">
         <summary></summary>
         {{ oppforing.detaljer|linebreaks }}
+
+        {% if fag %}
+            <h4>Relevante fag</h4>
+            <ul class="utvidbar">
+                {% for f in fag %}
+                    <li>
+                        {% if f.beskrivelse %}
+                            <details>
+                                <summary>{{ f }}</summary>
+                                {{ f.beskrivelse|linebreaks }}
+                            </details>
+                        {% else %}
+                            {{ f }}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
     </details>
 {% endif %}
