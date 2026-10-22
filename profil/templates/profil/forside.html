@@ -1,5 +1,48 @@
 {% extends "profil/base.html" %}
 
 {% block content %}
-    <h1>Velkommen</h1>
+    {% if profil %}
+        <h1>{{ profil.navn }}</h1>
+        {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
+    {% else %}
+        <h1>Velkommen</h1>
+        <p>Legg inn profilen din i <a href="{% url 'admin:index' %}">admin</a>.</p>
+    {% endif %}
+
+    {% if erfaringer %}
+        <section>
+            <h2>Erfaring</h2>
+            {% for erfaring in erfaringer %}
+                <article>
+                    <h3>{{ erfaring.stilling }}, {{ erfaring.arbeidsgiver }}</h3>
+                    <p>{{ erfaring.fra_dato|date:"F Y" }} – {{ erfaring.til_dato|date:"F Y"|default:"nå" }}</p>
+                    {{ erfaring.beskrivelse|linebreaks }}
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if utdanninger %}
+        <section>
+            <h2>Utdanning</h2>
+            {% for utdanning in utdanninger %}
+                <article>
+                    <h3>{{ utdanning.studie }}, {{ utdanning.skole }}</h3>
+                    <p>{{ utdanning.fra_dato|date:"F Y" }} – {{ utdanning.til_dato|date:"F Y"|default:"nå" }}</p>
+                    {{ utdanning.beskrivelse|linebreaks }}
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if ferdigheter %}
+        <section>
+            <h2>Ferdigheter</h2>
+            <ul>
+                {% for ferdighet in ferdigheter %}
+                    <li>{{ ferdighet.navn }} <span>{{ ferdighet.get_niva_display }}</span></li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
 {% endblock %}
