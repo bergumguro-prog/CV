@@ -31,7 +31,7 @@ class Erfaring(models.Model):
 
     @property
     def har_detaljer(self):
-        return bool(self.detaljer)
+        return bool(self.detaljer) or bool(self.egenskaper.all())
 
     def __str__(self):
         return f"{self.stilling}, {self.arbeidsgiver}"
@@ -51,7 +51,7 @@ class Utdanning(models.Model):
 
     @property
     def har_detaljer(self):
-        return bool(self.detaljer) or bool(self.fag.all())
+        return bool(self.detaljer) or bool(self.fag.all()) or bool(self.egenskaper.all())
 
     def __str__(self):
         return f"{self.studie}, {self.skole}"
@@ -102,7 +102,7 @@ class Verv(models.Model):
 
     @property
     def har_detaljer(self):
-        return bool(self.detaljer)
+        return bool(self.detaljer) or bool(self.egenskaper.all())
 
     def __str__(self):
         return f"{self.rolle}, {self.organisasjon}"
@@ -120,3 +120,51 @@ class Fag(models.Model):
 
     def __str__(self):
         return f"{self.emnekode} {self.navn}".strip()
+
+
+class Egenskap(models.Model):
+    navn = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        verbose_name_plural = "egenskaper"
+        ordering = ["navn"]
+
+    def __str__(self):
+        return self.navn
+
+
+class EgenskapKobling(models.Model):
+    """Kobler en egenskap til én oppføring, med forklaring på hvordan oppføringen ga egenskapen."""
+
+    egenskap = models.ForeignKey(Egenskap, on_delete=models.CASCADE)
+    forklaring = models.TextField(blank=True, help_text="Hvordan akkurat denne oppføringen ga egenskapen.")
+
+    class Meta:
+        abstract = True
+        ordering = ["egenskap__navn"]
+        verbose_name = "egenskap"
+        verbose_name_plural = "egenskaper"
+
+    def __str__(self):
+        return str(self.egenskap)
+
+
+class UtdanningEgenskap(EgenskapKobling):
+    utdanning = models.ForeignKey(Utdanning, on_delete=models.CASCADE, related_name="egenskaper")
+
+    class Meta(EgenskapKobling.Meta):
+        constraints = [models.UniqueConstraint(fields=["utdanning", "egenskap"], name="unik_utdanning_egenskap")]
+
+
+class ErfaringEgenskap(EgenskapKobling):
+    erfaring = models.ForeignKey(Erfaring, on_delete=models.CASCADE, related_name="egenskaper")
+
+    class Meta(EgenskapKobling.Meta):
+        constraints = [models.UniqueConstraint(fields=["erfaring", "egenskap"], name="unik_erfaring_egenskap")]
+
+
+class VervEgenskap(EgenskapKobling):
+    verv = models.ForeignKey(Verv, on_delete=models.CASCADE, related_name="egenskaper")
+
+    class Meta(EgenskapKobling.Meta):
+        constraints = [models.UniqueConstraint(fields=["verv", "egenskap"], name="unik_verv_egenskap")]

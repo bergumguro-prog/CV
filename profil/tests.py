@@ -7,7 +7,18 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Erfaring, Fag, Ferdighet, Profil, Prosjekt, Utdanning, Verv
+from .models import (
+    Egenskap,
+    Erfaring,
+    ErfaringEgenskap,
+    Fag,
+    Ferdighet,
+    Profil,
+    Prosjekt,
+    Utdanning,
+    Verv,
+    VervEgenskap,
+)
 
 
 class ModellTester(TestCase):
@@ -69,6 +80,21 @@ class SideTester(TestCase):
         self.assertContains(response, "<summary>TDT4100 Objektorientert programmering</summary>", html=True)
         self.assertContains(response, "Java og testing.")
         self.assertContains(response, "Uten beskrivelse")
+
+    def test_egenskaper_med_forklaring(self):
+        ledelse = Egenskap.objects.create(navn="Ledelse")
+        teamarbeid = Egenskap.objects.create(navn="Teamarbeid")
+        jobb = Erfaring.objects.create(stilling="Medic", arbeidsgiver="Forsvaret", fra_dato=date(2024, 1, 1))
+        verv = Verv.objects.create(rolle="Leder", organisasjon="Abakus", fra_dato=date(2026, 1, 1))
+        ErfaringEgenskap.objects.create(erfaring=jobb, egenskap=teamarbeid)
+        VervEgenskap.objects.create(verv=verv, egenskap=ledelse, forklaring="Ledet jubileumsstyret.")
+        VervEgenskap.objects.create(verv=verv, egenskap=teamarbeid)
+
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, 'class="mer"', count=2)
+        self.assertContains(response, "<summary>Ledelse</summary>", html=True)
+        self.assertContains(response, "Ledet jubileumsstyret.")
+        self.assertNotContains(response, "<summary>Teamarbeid</summary>", html=True)
 
     def test_prosjektsiden_viser_prosjekter(self):
         Prosjekt.objects.create(tittel="CV-side", beskrivelse="Laget med Django", lenke="https://github.com")

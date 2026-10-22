@@ -6,9 +6,9 @@ from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning, Verv
 def forside(request):
     return render(request, "profil/forside.html", {
         "profil": Profil.objects.first(),
-        "erfaringer": Erfaring.objects.all(),
-        "verv": Verv.objects.all(),
-        "utdanninger": Utdanning.objects.prefetch_related("fag"),
+        "erfaringer": Erfaring.objects.prefetch_related("egenskaper__egenskap"),
+        "verv": Verv.objects.prefetch_related("egenskaper__egenskap"),
+        "utdanninger": Utdanning.objects.prefetch_related("fag", "egenskaper__egenskap"),
         "ferdigheter": Ferdighet.objects.all(),
     })
 
