@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning
+from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning, Verv
 
 
 class ModellTester(TestCase):
@@ -13,6 +13,7 @@ class ModellTester(TestCase):
         self.assertEqual(str(Utdanning(studie="Informatikk", skole="UiO")), "Informatikk, UiO")
         self.assertEqual(str(Ferdighet(navn="Python")), "Python")
         self.assertEqual(str(Prosjekt(tittel="CV-side")), "CV-side")
+        self.assertEqual(str(Verv(rolle="Leder", organisasjon="Abakus")), "Leder, Abakus")
 
     def test_erfaring_nyeste_forst(self):
         Erfaring.objects.create(stilling="Gammel", arbeidsgiver="A", fra_dato=date(2020, 1, 1))
@@ -33,10 +34,12 @@ class SideTester(TestCase):
         Profil.objects.create(navn="Ola Nordmann", tittel="Utvikler")
         Erfaring.objects.create(stilling="Utvikler", arbeidsgiver="Firma", fra_dato=date(2024, 1, 1))
         Ferdighet.objects.create(navn="Django")
+        Verv.objects.create(rolle="Leder", organisasjon="Abakus", fra_dato=date(2026, 1, 1))
         response = self.client.get(reverse("profil:forside"))
         self.assertContains(response, "Ola Nordmann")
         self.assertContains(response, "Utvikler, Firma")
         self.assertContains(response, "Django")
+        self.assertContains(response, "Leder, Abakus")
 
     def test_prosjektsiden_viser_prosjekter(self):
         Prosjekt.objects.create(tittel="CV-side", beskrivelse="Laget med Django", lenke="https://github.com")

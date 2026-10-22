@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning
+from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning, Verv
 
 
 @admin.register(Profil)
@@ -11,6 +11,11 @@ class ProfilAdmin(admin.ModelAdmin):
 @admin.register(Erfaring)
 class ErfaringAdmin(admin.ModelAdmin):
     list_display = ["stilling", "arbeidsgiver", "fra_dato", "til_dato"]
+
+
+@admin.register(Verv)
+class VervAdmin(admin.ModelAdmin):
+    list_display = ["rolle", "organisasjon", "fra_dato", "til_dato"]
 
 
 @admin.register(Utdanning)
