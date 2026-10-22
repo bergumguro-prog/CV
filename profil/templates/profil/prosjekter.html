@@ -7,7 +7,7 @@
     {% for prosjekt in prosjekter %}
         <article>
             <h2>{{ prosjekt.tittel }}</h2>
-            {% if prosjekt.dato %}<p>{{ prosjekt.dato|date:"F Y" }}</p>{% endif %}
+            {% if prosjekt.dato %}<p>{{ prosjekt.dato|date:"Y" }}</p>{% endif %}
             {{ prosjekt.beskrivelse|linebreaks }}
             {% if prosjekt.lenke %}<p><a href="{{ prosjekt.lenke }}">Se prosjektet</a></p>{% endif %}
         </article>
