@@ -15,7 +15,7 @@
             {% for erfaring in erfaringer %}
                 <article>
                     <h3>{{ erfaring.stilling }}, {{ erfaring.arbeidsgiver }}</h3>
-                    <p>{{ erfaring.fra_dato|date:"F Y" }} – {{ erfaring.til_dato|date:"F Y"|default:"nå" }}</p>
+                    <p>{{ erfaring.fra_dato|date:"Y" }} – {{ erfaring.til_dato|date:"Y"|default:"nå" }}</p>
                     {{ erfaring.beskrivelse|linebreaks }}
                 </article>
             {% endfor %}
@@ -28,7 +28,7 @@
             {% for utdanning in utdanninger %}
                 <article>
                     <h3>{{ utdanning.studie }}, {{ utdanning.skole }}</h3>
-                    <p>{{ utdanning.fra_dato|date:"F Y" }} – {{ utdanning.til_dato|date:"F Y"|default:"nå" }}</p>
+                    <p>{{ utdanning.fra_dato|date:"Y" }} – {{ utdanning.til_dato|date:"Y"|default:"nå" }}</p>
                     {{ utdanning.beskrivelse|linebreaks }}
                 </article>
             {% endfor %}
