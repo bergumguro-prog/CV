@@ -1,6 +1,10 @@
+import shutil
+import tempfile
 from datetime import date
+from io import BytesIO
 
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning, Verv
@@ -46,3 +50,22 @@ class SideTester(TestCase):
         response = self.client.get(reverse("profil:prosjekter"))
         self.assertContains(response, "CV-side")
         self.assertContains(response, 'href="https://github.com"')
+
+
+class ProfilbildeTester(TestCase):
+    def setUp(self):
+        self.media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.media)
+
+    def test_forsiden_viser_profilbilde(self):
+        from PIL import Image
+
+        fil = BytesIO()
+        Image.new("RGB", (10, 10)).save(fil, "PNG")
+        with override_settings(MEDIA_ROOT=self.media):
+            Profil.objects.create(
+                navn="Ola Nordmann",
+                bilde=SimpleUploadedFile("ola.png", fil.getvalue(), content_type="image/png"),
+            )
+            response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, '<img src="/media/profil/ola')

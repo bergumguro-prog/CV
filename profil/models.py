@@ -4,6 +4,7 @@ from django.db import models
 class Profil(models.Model):
     navn = models.CharField(max_length=100)
     tittel = models.CharField(max_length=100, blank=True)
+    bilde = models.ImageField(upload_to="profil/", blank=True)
     om_meg = models.TextField(blank=True)
     epost = models.EmailField(blank=True)
     github = models.URLField(blank=True)
