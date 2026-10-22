@@ -1,0 +1,12 @@
+{% extends "profil/base.html" %}
+
+{% block title %}Om meg{% endblock %}
+
+{% block content %}
+    <h1>Om meg</h1>
+    {% if profil.om_meg %}
+        {{ profil.om_meg|linebreaks }}
+    {% else %}
+        <p>Ingen tekst ennå.</p>
+    {% endif %}
+{% endblock %}

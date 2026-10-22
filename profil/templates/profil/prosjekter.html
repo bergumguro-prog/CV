@@ -1,0 +1,17 @@
+{% extends "profil/base.html" %}
+
+{% block title %}Prosjekter{% endblock %}
+
+{% block content %}
+    <h1>Prosjekter</h1>
+    {% for prosjekt in prosjekter %}
+        <article>
+            <h2>{{ prosjekt.tittel }}</h2>
+            {% if prosjekt.dato %}<p>{{ prosjekt.dato|date:"F Y" }}</p>{% endif %}
+            {{ prosjekt.beskrivelse|linebreaks }}
+            {% if prosjekt.lenke %}<p><a href="{{ prosjekt.lenke }}">Se prosjektet</a></p>{% endif %}
+        </article>
+    {% empty %}
+        <p>Ingen prosjekter ennå.</p>
+    {% endfor %}
+{% endblock %}
