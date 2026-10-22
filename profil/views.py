@@ -8,7 +8,7 @@ def forside(request):
         "profil": Profil.objects.first(),
         "erfaringer": Erfaring.objects.all(),
         "verv": Verv.objects.all(),
-        "utdanninger": Utdanning.objects.all(),
+        "utdanninger": Utdanning.objects.prefetch_related("fag"),
         "ferdigheter": Ferdighet.objects.all(),
     })
 

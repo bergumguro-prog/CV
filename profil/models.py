@@ -51,7 +51,7 @@ class Utdanning(models.Model):
 
     @property
     def har_detaljer(self):
-        return bool(self.detaljer)
+        return bool(self.detaljer) or bool(self.fag.all())
 
     def __str__(self):
         return f"{self.studie}, {self.skole}"
@@ -106,3 +106,17 @@ class Verv(models.Model):
 
     def __str__(self):
         return f"{self.rolle}, {self.organisasjon}"
+
+
+class Fag(models.Model):
+    utdanning = models.ForeignKey(Utdanning, on_delete=models.CASCADE, related_name="fag")
+    emnekode = models.CharField(max_length=20, blank=True)
+    navn = models.CharField(max_length=100)
+    beskrivelse = models.TextField(blank=True, help_text="Hva faget handlet om, og hvorfor det er relevant.")
+
+    class Meta:
+        verbose_name_plural = "fag"
+        ordering = ["emnekode", "navn"]
+
+    def __str__(self):
+        return f"{self.emnekode} {self.navn}".strip()
