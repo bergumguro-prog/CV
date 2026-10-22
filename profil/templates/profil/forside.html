@@ -22,6 +22,19 @@
         </section>
     {% endif %}
 
+    {% if verv %}
+        <section>
+            <h2>Verv</h2>
+            {% for v in verv %}
+                <article>
+                    <h3>{{ v.rolle }}, {{ v.organisasjon }}</h3>
+                    <p>{{ v.fra_dato|date:"Y" }} – {{ v.til_dato|date:"Y"|default:"nå" }}</p>
+                    {{ v.beskrivelse|linebreaks }}
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+
     {% if utdanninger %}
         <section>
             <h2>Utdanning</h2>

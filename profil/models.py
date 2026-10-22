@@ -75,3 +75,18 @@ class Prosjekt(models.Model):
 
     def __str__(self):
         return self.tittel
+
+
+class Verv(models.Model):
+    rolle = models.CharField(max_length=100)
+    organisasjon = models.CharField(max_length=100)
+    fra_dato = models.DateField()
+    til_dato = models.DateField(null=True, blank=True, help_text="La stå tom hvis vervet pågår.")
+    beskrivelse = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name_plural = "verv"
+        ordering = ["-fra_dato"]
+
+    def __str__(self):
+        return f"{self.rolle}, {self.organisasjon}"
