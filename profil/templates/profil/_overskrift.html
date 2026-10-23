@@ -1,0 +1,13 @@
+<h3>{{ oppforing }}</h3>
+{% if utvidbar %}<span class="vis-mer"></span>{% endif %}
+<span class="ar">
+    {% if oppforing.fra_dato %}
+        {% if oppforing.til_dato and oppforing.til_dato.year == oppforing.fra_dato.year %}
+            {{ oppforing.fra_dato|date:"Y" }}
+        {% else %}
+            {{ oppforing.fra_dato|date:"Y" }} – {{ oppforing.til_dato|date:"Y"|default:"nå" }}
+        {% endif %}
+    {% elif oppforing.dato %}
+        {{ oppforing.dato|date:"Y" }}
+    {% endif %}
+</span>

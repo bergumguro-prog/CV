@@ -1,0 +1,52 @@
+<article class="punkt">
+    {% if oppforing.har_detaljer %}
+        <details class="mer">
+            <summary>{% include "profil/_overskrift.html" with utvidbar=True %}</summary>
+            <div class="mer-innhold">
+                {{ oppforing.beskrivelse|linebreaks }}
+                {% if oppforing.detaljer %}{{ oppforing.detaljer|linebreaks }}{% endif %}
+                {% if oppforing.lenke %}<p><a href="{{ oppforing.lenke }}">Se prosjektet</a></p>{% endif %}
+
+                {% if fag %}
+                    <h4>Relevante fag</h4>
+                    <ul class="utvidbar">
+                        {% for f in fag %}
+                            <li>
+                                {% if f.beskrivelse %}
+                                    <details class="under">
+                                        <summary><span>{{ f }}</span><span class="vis-mer"></span></summary>
+                                        <div class="mer-innhold">{{ f.beskrivelse|linebreaks }}</div>
+                                    </details>
+                                {% else %}
+                                    {{ f }}
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% with egenskaper=oppforing.egenskaper.all %}
+                    {% if egenskaper %}
+                        <h4>Egenskaper</h4>
+                        <ul class="utvidbar">
+                            {% for e in egenskaper %}
+                                <li>
+                                    {% if e.forklaring %}
+                                        <details class="under">
+                                            <summary><span>{{ e.egenskap }}</span><span class="vis-mer"></span></summary>
+                                            <div class="mer-innhold">{{ e.forklaring|linebreaks }}</div>
+                                        </details>
+                                    {% else %}
+                                        {{ e.egenskap }}
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </details>
+    {% else %}
+        <div class="rad">{% include "profil/_overskrift.html" %}</div>
+    {% endif %}
+</article>

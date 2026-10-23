@@ -77,7 +77,7 @@ class SideTester(TestCase):
         Fag.objects.create(utdanning=utdanning, navn="Uten beskrivelse")
         response = self.client.get(reverse("profil:forside"))
         self.assertContains(response, 'class="mer"', count=1)
-        self.assertContains(response, "<summary>TDT4100 Objektorientert programmering</summary>", html=True)
+        self.assertContains(response, '<summary><span>TDT4100 Objektorientert programmering</span><span class="vis-mer"></span></summary>', html=True)
         self.assertContains(response, "Java og testing.")
         self.assertContains(response, "Uten beskrivelse")
 
@@ -92,9 +92,21 @@ class SideTester(TestCase):
 
         response = self.client.get(reverse("profil:forside"))
         self.assertContains(response, 'class="mer"', count=2)
-        self.assertContains(response, "<summary>Ledelse</summary>", html=True)
+        self.assertContains(response, '<summary><span>Ledelse</span><span class="vis-mer"></span></summary>', html=True)
         self.assertContains(response, "Ledet jubileumsstyret.")
-        self.assertNotContains(response, "<summary>Teamarbeid</summary>", html=True)
+        self.assertNotContains(response, '<summary><span>Teamarbeid</span><span class="vis-mer"></span></summary>', html=True)
+
+    def test_bare_overskrift_og_ar_utenfor_vis_mer(self):
+        Erfaring.objects.create(stilling="Sommerjobb", arbeidsgiver="Firma", fra_dato=date(2023, 1, 1),
+                                til_dato=date(2023, 1, 1), beskrivelse="Skjult tekst.")
+        Erfaring.objects.create(stilling="Uten mer", arbeidsgiver="A", fra_dato=date(2020, 1, 1))
+        response = self.client.get(reverse("profil:forside"))
+        tekst = response.content.decode()
+        self.assertContains(response, 'class="mer"', count=1)
+        self.assertLess(tekst.index("Sommerjobb, Firma"), tekst.index('class="vis-mer"'))
+        self.assertLess(tekst.index('class="vis-mer"'), tekst.index("Skjult tekst."))
+        self.assertNotIn("2023 – 2023", tekst)
+        self.assertInHTML('<span class="ar">2020 – nå</span>', tekst)
 
     def test_prosjektsiden_viser_prosjekter(self):
         Prosjekt.objects.create(tittel="CV-side", beskrivelse="Laget med Django", lenke="https://github.com")

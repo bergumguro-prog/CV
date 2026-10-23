@@ -33,7 +33,7 @@ class Erfaring(models.Model):
 
     @property
     def har_detaljer(self):
-        return bool(self.detaljer) or bool(self.egenskaper.all())
+        return bool(self.beskrivelse or self.detaljer) or bool(self.egenskaper.all())
 
     def __str__(self):
         return f"{self.stilling}, {self.arbeidsgiver}"
@@ -53,7 +53,7 @@ class Utdanning(models.Model):
 
     @property
     def har_detaljer(self):
-        return bool(self.detaljer) or bool(self.fag.all()) or bool(self.egenskaper.all())
+        return bool(self.beskrivelse or self.detaljer) or bool(self.fag.all()) or bool(self.egenskaper.all())
 
     def __str__(self):
         return f"{self.studie}, {self.skole}"
@@ -86,6 +86,10 @@ class Prosjekt(models.Model):
         verbose_name_plural = "prosjekter"
         ordering = ["-dato"]
 
+    @property
+    def har_detaljer(self):
+        return bool(self.beskrivelse or self.lenke)
+
     def __str__(self):
         return self.tittel
 
@@ -104,7 +108,7 @@ class Verv(models.Model):
 
     @property
     def har_detaljer(self):
-        return bool(self.detaljer) or bool(self.egenskaper.all())
+        return bool(self.beskrivelse or self.detaljer) or bool(self.egenskaper.all())
 
     def __str__(self):
         return f"{self.rolle}, {self.organisasjon}"

@@ -29,12 +29,7 @@
         <section>
             <h2>Erfaring</h2>
             {% for erfaring in erfaringer %}
-                <article>
-                    <h3>{{ erfaring.stilling }}, {{ erfaring.arbeidsgiver }}</h3>
-                    <p>{{ erfaring.fra_dato|date:"Y" }} – {{ erfaring.til_dato|date:"Y"|default:"nå" }}</p>
-                    {{ erfaring.beskrivelse|linebreaks }}
-                    {% include "profil/_mer.html" with oppforing=erfaring %}
-                </article>
+                {% include "profil/_punkt.html" with oppforing=erfaring %}
             {% endfor %}
         </section>
     {% endif %}
@@ -43,12 +38,7 @@
         <section>
             <h2>Verv</h2>
             {% for v in verv %}
-                <article>
-                    <h3>{{ v.rolle }}, {{ v.organisasjon }}</h3>
-                    <p>{{ v.fra_dato|date:"Y" }} – {{ v.til_dato|date:"Y"|default:"nå" }}</p>
-                    {{ v.beskrivelse|linebreaks }}
-                    {% include "profil/_mer.html" with oppforing=v %}
-                </article>
+                {% include "profil/_punkt.html" with oppforing=v %}
             {% endfor %}
         </section>
     {% endif %}
@@ -57,12 +47,7 @@
         <section>
             <h2>Utdanning</h2>
             {% for utdanning in utdanninger %}
-                <article>
-                    <h3>{{ utdanning.studie }}, {{ utdanning.skole }}</h3>
-                    <p>{{ utdanning.fra_dato|date:"Y" }} – {{ utdanning.til_dato|date:"Y"|default:"nå" }}</p>
-                    {{ utdanning.beskrivelse|linebreaks }}
-                    {% include "profil/_mer.html" with oppforing=utdanning fag=utdanning.fag.all %}
-                </article>
+                {% include "profil/_punkt.html" with oppforing=utdanning fag=utdanning.fag.all %}
             {% endfor %}
         </section>
     {% endif %}
