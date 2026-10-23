@@ -1,4 +1,4 @@
-<article class="punkt">
+<article class="punkt{% if user.is_staff %} redigerbar{% endif %}">
     {% if oppforing.har_detaljer %}
         <details class="mer">
             <summary>{% include "profil/_overskrift.html" with utvidbar=True %}</summary>
@@ -48,5 +48,8 @@
         </details>
     {% else %}
         <div class="rad">{% include "profil/_overskrift.html" %}</div>
+    {% endif %}
+    {% if user.is_staff and innhold %}
+        <a class="rediger" href="{% url 'profil:rediger' innhold oppforing.pk %}">Rediger</a>
     {% endif %}
 </article>

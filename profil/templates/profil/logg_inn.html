@@ -1,0 +1,16 @@
+{% extends "profil/base.html" %}
+
+{% block title %}Logg inn{% endblock %}
+
+{% block content %}
+    <h1>Logg inn</h1>
+    <p>Logg inn for å redigere CV-en.</p>
+    <form method="post" class="skjema smal">
+        {% csrf_token %}
+        {{ form.as_div }}
+        <input type="hidden" name="next" value="{{ next }}">
+        <div class="knapper">
+            <button type="submit" class="knapp">Logg inn</button>
+        </div>
+    </form>
+{% endblock %}

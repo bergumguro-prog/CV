@@ -1,4 +1,5 @@
 :root {
+    --fare: #dc2626;
     --bakgrunn: #fafaf9;
     --tekst: #1c1917;
     --dempet: #57534e;
@@ -13,6 +14,7 @@
         --dempet: #a8a29e;
         --linje: #44403c;
         --aksent: #60a5fa;
+        --fare: #f87171;
     }
 }
 
@@ -210,10 +212,166 @@ li span {
     font-size: 0.9rem;
 }
 
+/* Seksjonsoverskrift med «+ Legg til» */
+.seksjon-topp {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+section > .seksjon-topp {
+    margin-top: 40px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--linje);
+}
+
+.seksjon-topp h1,
+.seksjon-topp h2 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+/* Redigering (vises bare for innloggede) */
+.punkt.redigerbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+    align-items: start;
+}
+
+.rediger {
+    color: var(--dempet);
+    font-size: 0.8rem;
+}
+
+.knapp {
+    display: inline-block;
+    padding: 8px 16px;
+    border: 1px solid var(--aksent);
+    border-radius: 8px;
+    background: var(--aksent);
+    color: var(--bakgrunn);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.knapp:hover {
+    text-decoration: none;
+    opacity: 0.9;
+}
+
+.knapp.sekundar {
+    background: transparent;
+    color: var(--aksent);
+}
+
+.knapp.liten {
+    padding: 2px 12px;
+    font-size: 0.85rem;
+}
+
+.knapp.fare-knapp {
+    border-color: var(--fare);
+    background: var(--fare);
+}
+
+.fare {
+    color: var(--fare);
+}
+
+.knapper {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+/* Skjemaer */
+.skjema > div,
+.skjema-rad > div {
+    margin-bottom: 14px;
+}
+
+.skjema.smal {
+    max-width: 360px;
+}
+
+.skjema label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.skjema input:not([type="checkbox"]):not([type="file"]),
+.skjema textarea,
+.skjema select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--linje);
+    border-radius: 6px;
+    background: var(--bakgrunn);
+    color: var(--tekst);
+    font: inherit;
+}
+
+.skjema textarea {
+    min-height: 90px;
+}
+
+.skjema .helptext,
+.hjelp {
+    color: var(--dempet);
+    font-size: 0.8rem;
+}
+
+.skjema fieldset {
+    margin: 24px 0;
+    padding: 12px 16px;
+    border: 1px solid var(--linje);
+    border-radius: 8px;
+}
+
+.skjema legend {
+    padding: 0 6px;
+    font-weight: 700;
+}
+
+.skjema-rad {
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+    border-bottom: 1px dashed var(--linje);
+}
+
+.errorlist {
+    margin: 4px 0;
+    padding: 0;
+    list-style: none;
+    color: var(--fare);
+    font-size: 0.85rem;
+}
+
 footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     padding-top: 16px;
     padding-bottom: 32px;
     border-top: 1px solid var(--linje);
     color: var(--dempet);
     font-size: 0.85rem;
+}
+
+footer form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
 }

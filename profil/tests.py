@@ -186,3 +186,78 @@ class LydTester(TestCase):
     def test_ingen_avspiller_uten_lyd(self):
         response = self.client.get(reverse("profil:forside"))
         self.assertNotContains(response, "<audio")
+
+
+class RedigeringTester(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        self.admin = User.objects.create_superuser("guro", "guro@example.com", "passord")
+        self.utdanning = Utdanning.objects.create(studie="Datateknologi", skole="NTNU", fra_dato=date(2025, 1, 1))
+
+    def formset(self, prefix, *rader):
+        data = {f"{prefix}-TOTAL_FORMS": str(len(rader)), f"{prefix}-INITIAL_FORMS": "0",
+                f"{prefix}-MIN_NUM_FORMS": "0", f"{prefix}-MAX_NUM_FORMS": "1000"}
+        for i, rad in enumerate(rader):
+            data.update({f"{prefix}-{i}-{felt}": verdi for felt, verdi in rad.items()})
+        return data
+
+    def test_bare_innloggede_kan_redigere(self):
+        response = self.client.get(reverse("profil:ny", args=["erfaring"]))
+        self.assertRedirects(response, reverse("profil:logg_inn") + "?next=/rediger/erfaring/ny/")
+
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, "Logg inn")
+        self.assertNotContains(response, "+ Legg til")
+        self.assertNotContains(response, ">Rediger<")
+
+    def test_knapper_for_innlogget(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, "+ Legg til", count=4)
+        self.assertContains(response, reverse("profil:rediger", args=["utdanning", self.utdanning.pk]))
+        self.assertContains(response, "Logg ut")
+
+    def test_legg_til_erfaring_med_ny_egenskap(self):
+        self.client.force_login(self.admin)
+        data = {"stilling": "Utvikler", "arbeidsgiver": "TellMe", "fra_dato": "2026-11-01", "til_dato": "",
+                "beskrivelse": "", "detaljer": ""}
+        data |= self.formset("egenskaper", {"navn": "Ledelse", "forklaring": "Ledet arbeidet."})
+        response = self.client.post(reverse("profil:ny", args=["erfaring"]), data)
+        self.assertRedirects(response, reverse("profil:forside") + "#erfaring")
+
+        erfaring = Erfaring.objects.get(arbeidsgiver="TellMe")
+        kobling = erfaring.egenskaper.get()
+        self.assertEqual((kobling.egenskap.navn, kobling.forklaring), ("Ledelse", "Ledet arbeidet."))
+
+    def test_gjenbruker_egenskap_uansett_store_bokstaver(self):
+        Egenskap.objects.create(navn="Teamarbeid")
+        self.client.force_login(self.admin)
+        data = {"studie": "Datateknologi", "skole": "NTNU", "fra_dato": "2025-01-01", "til_dato": "",
+                "beskrivelse": "", "detaljer": ""}
+        data |= self.formset("fag", {"emnekode": "TDT4100", "navn": "OOP", "beskrivelse": "Java."})
+        data |= self.formset("egenskaper", {"navn": "teamarbeid", "forklaring": ""})
+        self.client.post(reverse("profil:rediger", args=["utdanning", self.utdanning.pk]), data)
+
+        self.assertEqual(Egenskap.objects.count(), 1)
+        self.assertEqual(self.utdanning.fag.get().emnekode, "TDT4100")
+
+    def test_samme_egenskap_to_ganger_gir_feilmelding(self):
+        self.client.force_login(self.admin)
+        data = {"rolle": "Leder", "organisasjon": "Abakus", "fra_dato": "2026-01-01", "til_dato": "",
+                "beskrivelse": "", "detaljer": ""}
+        data |= self.formset("egenskaper", {"navn": "Ledelse", "forklaring": ""}, {"navn": "ledelse", "forklaring": ""})
+        response = self.client.post(reverse("profil:ny", args=["verv"]), data)
+        self.assertContains(response, "Samme egenskap er lagt inn to ganger.")
+        self.assertFalse(Verv.objects.exists())
+
+    def test_slett_etter_bekreftelse(self):
+        self.client.force_login(self.admin)
+        url = reverse("profil:slett", args=["utdanning", self.utdanning.pk])
+        self.assertContains(self.client.get(url), "Ja, slett")
+        self.client.post(url)
+        self.assertFalse(Utdanning.objects.exists())
+
+    def test_ukjent_type_gir_404(self):
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get("/rediger/hemmelig/ny/").status_code, 404)

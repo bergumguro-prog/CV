@@ -129,6 +129,11 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Innlogging for å redigere CV-en
+LOGIN_URL = "profil:logg_inn"
+LOGIN_REDIRECT_URL = "profil:forside"
+LOGOUT_REDIRECT_URL = "profil:forside"
+
 # ElevenLabs for «Lytt til CV-en» (python manage.py lag_lyd)
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
 ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "")

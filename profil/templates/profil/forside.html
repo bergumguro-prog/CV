@@ -7,6 +7,7 @@
             <div>
                 <h1>{{ profil.navn }}</h1>
                 {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
+                {% if user.is_staff %}<a class="knapp sekundar liten" href="{% url 'profil:rediger' 'profil' profil.pk %}">Rediger profil</a>{% endif %}
             </div>
         </div>
 
@@ -22,42 +23,59 @@
         {% endif %}
     {% else %}
         <h1>Velkommen</h1>
-        <p>Legg inn profilen din i <a href="{% url 'admin:index' %}">admin</a>.</p>
+        {% if user.is_staff %}
+            <p><a class="knapp" href="{% url 'profil:ny' 'profil' %}">+ Legg inn profilen din</a></p>
+        {% endif %}
     {% endif %}
 
-    {% if erfaringer %}
-        <section>
-            <h2>Erfaring</h2>
+    {% if erfaringer or user.is_staff %}
+        <section id="erfaring">
+            <div class="seksjon-topp">
+                <h2>Erfaring</h2>
+                {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'erfaring' %}">+ Legg til</a>{% endif %}
+            </div>
             {% for erfaring in erfaringer %}
-                {% include "profil/_punkt.html" with oppforing=erfaring %}
+                {% include "profil/_punkt.html" with oppforing=erfaring innhold="erfaring" %}
             {% endfor %}
         </section>
     {% endif %}
 
-    {% if verv %}
-        <section>
-            <h2>Verv</h2>
+    {% if verv or user.is_staff %}
+        <section id="verv">
+            <div class="seksjon-topp">
+                <h2>Verv</h2>
+                {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'verv' %}">+ Legg til</a>{% endif %}
+            </div>
             {% for v in verv %}
-                {% include "profil/_punkt.html" with oppforing=v %}
+                {% include "profil/_punkt.html" with oppforing=v innhold="verv" %}
             {% endfor %}
         </section>
     {% endif %}
 
-    {% if utdanninger %}
-        <section>
-            <h2>Utdanning</h2>
+    {% if utdanninger or user.is_staff %}
+        <section id="utdanning">
+            <div class="seksjon-topp">
+                <h2>Utdanning</h2>
+                {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'utdanning' %}">+ Legg til</a>{% endif %}
+            </div>
             {% for utdanning in utdanninger %}
-                {% include "profil/_punkt.html" with oppforing=utdanning fag=utdanning.fag.all %}
+                {% include "profil/_punkt.html" with oppforing=utdanning fag=utdanning.fag.all innhold="utdanning" %}
             {% endfor %}
         </section>
     {% endif %}
 
-    {% if ferdigheter %}
-        <section>
-            <h2>Ferdigheter</h2>
+    {% if ferdigheter or user.is_staff %}
+        <section id="ferdighet">
+            <div class="seksjon-topp">
+                <h2>Ferdigheter</h2>
+                {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'ferdighet' %}">+ Legg til</a>{% endif %}
+            </div>
             <ul>
                 {% for ferdighet in ferdigheter %}
-                    <li>{{ ferdighet.navn }} <span>{{ ferdighet.get_niva_display }}</span></li>
+                    <li>
+                        {{ ferdighet.navn }} <span>{{ ferdighet.get_niva_display }}</span>
+                        {% if user.is_staff %}<a class="rediger" href="{% url 'profil:rediger' 'ferdighet' ferdighet.pk %}">Rediger</a>{% endif %}
+                    </li>
                 {% endfor %}
             </ul>
         </section>
