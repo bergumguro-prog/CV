@@ -1,3 +1,6 @@
+import json
+import urllib.error
+
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand, CommandError
@@ -31,7 +34,14 @@ class Command(BaseCommand):
             raise CommandError("Sett ELEVENLABS_API_KEY og ELEVENLABS_VOICE_ID i .env.")
 
         self.stdout.write("Lager lyd med ElevenLabs …")
-        lyd = les_opp(manus)
+        try:
+            lyd = les_opp(manus)
+        except urllib.error.HTTPError as feil:
+            try:
+                melding = json.loads(feil.read())["detail"]["message"]
+            except (ValueError, KeyError, TypeError):
+                melding = feil.reason
+            raise CommandError(f"ElevenLabs svarte {feil.code}: {melding}")
         if profil.lyd:
             profil.lyd.delete(save=False)
         profil.lyd.save("cv.mp3", ContentFile(lyd), save=False)

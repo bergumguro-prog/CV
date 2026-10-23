@@ -198,6 +198,19 @@ class LydTester(TestCase):
         with self.assertRaises(CommandError):
             call_command("lag_lyd", stdout=StringIO())
 
+    def test_lesbar_feilmelding_fra_elevenlabs(self):
+        import urllib.error
+        from unittest.mock import patch
+
+        from django.core.management import CommandError, call_command
+
+        svar = BytesIO(b'{"detail": {"message": "Free users cannot use library voices via the API."}}')
+        feil = urllib.error.HTTPError("url", 402, "Payment Required", {}, svar)
+        with override_settings(ELEVENLABS_API_KEY="nokkel", ELEVENLABS_VOICE_ID="stemme"), \
+                patch("profil.management.commands.lag_lyd.les_opp", side_effect=feil):
+            with self.assertRaisesMessage(CommandError, "ElevenLabs svarte 402: Free users cannot use library voices"):
+                call_command("lag_lyd", stdout=StringIO())
+
     def test_ingen_avspiller_uten_lyd(self):
         response = self.client.get(reverse("profil:forside"))
         self.assertNotContains(response, "<audio")
