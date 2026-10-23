@@ -53,6 +53,28 @@ class EgenskapFormSet(BaseInlineFormSet):
             brukt.add(navn)
 
 
+class PeriodeForm(forms.ModelForm):
+    """Legger til «Pågår nå», siden et datofelt er vanskelig å tømme i noen nettlesere."""
+
+    pagar = forms.BooleanField(label="Pågår nå", required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["til_dato"].help_text = ""
+        self.fields["pagar"].initial = self.instance.pk is not None and self.instance.til_dato is None
+        rekkefolge = list(self.fields)
+        rekkefolge.remove("pagar")
+        rekkefolge.insert(rekkefolge.index("til_dato") + 1, "pagar")
+        self.order_fields(rekkefolge)
+
+    def clean(self):
+        data = super().clean()
+        if data.get("pagar"):
+            data["til_dato"] = None
+            self.errors.pop("til_dato", None)
+        return data
+
+
 def _egenskaper(forelder, kobling):
     return inlineformset_factory(
         forelder, kobling, form=EgenskapForm, formset=EgenskapFormSet,
@@ -78,7 +100,8 @@ class Type:
     def skjema(self):
         datoer = [f for f in self.felt if isinstance(self.modell._meta.get_field(f), models.DateField)]
         widgets = {f: forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d") for f in datoer}
-        return modelform_factory(self.modell, fields=self.felt, widgets=widgets)
+        form = PeriodeForm if "til_dato" in self.felt else forms.ModelForm
+        return modelform_factory(self.modell, form=form, fields=self.felt, widgets=widgets)
 
 
 TYPER = {
