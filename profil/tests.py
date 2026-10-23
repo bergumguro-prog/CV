@@ -258,6 +258,28 @@ class RedigeringTester(TestCase):
         self.client.post(url)
         self.assertFalse(Utdanning.objects.exists())
 
+    def test_pagar_na_fjerner_sluttdato(self):
+        verv = Verv.objects.create(rolle="Leder", organisasjon="Abakus", fra_dato=date(2026, 1, 1),
+                                   til_dato=date(2027, 1, 1))
+        self.client.force_login(self.admin)
+        data = {"rolle": "Leder", "organisasjon": "Abakus", "fra_dato": "2026-01-01", "til_dato": "2027-01-01",
+                "pagar": "on", "beskrivelse": "", "detaljer": ""}
+        data |= self.formset("egenskaper")
+        self.client.post(reverse("profil:rediger", args=["verv", verv.pk]), data)
+        verv.refresh_from_db()
+        self.assertIsNone(verv.til_dato)
+
+        response = self.client.get(reverse("profil:rediger", args=["verv", verv.pk]))
+        self.assertContains(response, 'name="pagar" id="id_pagar" checked')
+
+    def test_pagar_na_med_ugyldig_dato(self):
+        self.client.force_login(self.admin)
+        data = {"rolle": "Leder", "organisasjon": "Abakus", "fra_dato": "2026-01-01", "til_dato": "ugyldig",
+                "pagar": "on", "beskrivelse": "", "detaljer": ""}
+        data |= self.formset("egenskaper")
+        self.client.post(reverse("profil:ny", args=["verv"]), data)
+        self.assertIsNone(Verv.objects.get().til_dato)
+
     def test_ukjent_type_gir_404(self):
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get("/rediger/hemmelig/ny/").status_code, 404)

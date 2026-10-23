@@ -30,4 +30,15 @@
             {% endif %}
         </div>
     </form>
+
+    <script>
+        // Deaktiver sluttdatoen når «Pågår nå» er krysset av
+        const pagar = document.querySelector('input[name="pagar"]');
+        const tilDato = document.querySelector('input[name="til_dato"]');
+        if (pagar && tilDato) {
+            const oppdater = () => { tilDato.disabled = pagar.checked; };
+            pagar.addEventListener("change", oppdater);
+            oppdater();
+        }
+    </script>
 {% endblock %}
