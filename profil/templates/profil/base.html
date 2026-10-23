@@ -30,8 +30,6 @@
                 {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
                 <button type="submit" class="knapp sekundar liten">Logg ut</button>
             </form>
-        {% else %}
-            <a class="knapp sekundar liten" href="{% url 'profil:logg_inn' %}?next={{ request.path|urlencode }}">Logg inn</a>
         {% endif %}
     </footer>
 </body>

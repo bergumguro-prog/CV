@@ -1,0 +1,9 @@
+{% extends "profil/base.html" %}
+
+{% block title %}Midlertidig sperret{% endblock %}
+
+{% block content %}
+    <h1>Midlertidig sperret</h1>
+    <p>Det har vært for mange mislykkede innloggingsforsøk. Prøv igjen om en time.</p>
+    <p><a href="{% url 'profil:forside' %}">Tilbake til forsiden</a></p>
+{% endblock %}

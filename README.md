@@ -34,6 +34,16 @@ En ny `DJANGO_SECRET_KEY` lages med:
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
+## Redigere innhold
+
+Gå til `/logg-inn/` og logg inn med superbrukeren. Da dukker «Rediger» og «+ Legg til» opp direkte på CV-en.
+
+Etter 5 mislykkede innloggingsforsøk sperres IP-adressen i 1 time. Sperrer du deg selv ute, opphever du det med:
+
+```zsh
+python manage.py axes_reset
+```
+
 ## Publisering på PythonAnywhere
 
 1. Lag en gratis konto på [pythonanywhere.com](https://www.pythonanywhere.com) og åpne en **Bash console**.
@@ -72,4 +82,5 @@ python manage.py test
 | `/om-meg/` | Om meg-tekst |
 | `/prosjekter/` | Prosjekter |
 | `/kontakt/` | E-post, GitHub og LinkedIn |
-| `/admin/` | Redigering av innhold |
+| `/logg-inn/` | Innlogging for å redigere |
+| `/admin/` | Djangos admin (avansert) |
