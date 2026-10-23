@@ -1,0 +1,33 @@
+{% extends "profil/base.html" %}
+
+{% block title %}{{ overskrift }}{% endblock %}
+
+{% block content %}
+    <h1>{{ overskrift|capfirst }}</h1>
+
+    <form method="post" enctype="multipart/form-data" class="skjema">
+        {% csrf_token %}
+        {{ form.as_div }}
+
+        {% for tittel, formset in formsets %}
+            <fieldset>
+                <legend>{{ tittel }}</legend>
+                {{ formset.management_form }}
+                {{ formset.non_form_errors }}
+                {% for f in formset %}
+                    <div class="skjema-rad">{{ f.as_div }}</div>
+                {% endfor %}
+                <p class="hjelp">Trykk «Lagre og fortsett» for å få et nytt tomt felt.</p>
+            </fieldset>
+        {% endfor %}
+
+        <div class="knapper">
+            <button type="submit" class="knapp">Lagre</button>
+            {% if formsets %}<button type="submit" name="fortsett" class="knapp sekundar">Lagre og fortsett</button>{% endif %}
+            <a href="{{ tilbake }}">Avbryt</a>
+            {% if objekt.pk and innhold != "profil" %}
+                <a class="fare" href="{% url 'profil:slett' innhold objekt.pk %}">Slett</a>
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}

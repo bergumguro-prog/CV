@@ -3,7 +3,10 @@
 {% block title %}Om meg{% endblock %}
 
 {% block content %}
-    <h1>Om meg</h1>
+    <div class="seksjon-topp">
+        <h1>Om meg</h1>
+        {% if user.is_staff and profil %}<a class="knapp sekundar liten" href="{% url 'profil:rediger' 'profil' profil.pk %}">Rediger</a>{% endif %}
+    </div>
     {% if profil.om_meg %}
         {{ profil.om_meg|linebreaks }}
     {% else %}

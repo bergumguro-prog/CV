@@ -3,7 +3,10 @@
 {% block title %}Kontakt{% endblock %}
 
 {% block content %}
-    <h1>Kontakt</h1>
+    <div class="seksjon-topp">
+        <h1>Kontakt</h1>
+        {% if user.is_staff and profil %}<a class="knapp sekundar liten" href="{% url 'profil:rediger' 'profil' profil.pk %}">Rediger</a>{% endif %}
+    </div>
     {% if profil.epost or profil.github or profil.linkedin %}
         <ul>
             {% if profil.epost %}<li>E-post: <a href="mailto:{{ profil.epost }}">{{ profil.epost }}</a></li>{% endif %}

@@ -3,9 +3,12 @@
 {% block title %}Prosjekter{% endblock %}
 
 {% block content %}
-    <h1>Prosjekter</h1>
+    <div class="seksjon-topp" id="prosjekt">
+        <h1>Prosjekter</h1>
+        {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'prosjekt' %}">+ Legg til</a>{% endif %}
+    </div>
     {% for prosjekt in prosjekter %}
-        {% include "profil/_punkt.html" with oppforing=prosjekt %}
+        {% include "profil/_punkt.html" with oppforing=prosjekt innhold="prosjekt" %}
     {% empty %}
         <p>Ingen prosjekter ennå.</p>
     {% endfor %}

@@ -1,0 +1,13 @@
+{% extends "profil/base.html" %}
+
+{% block title %}Slett{% endblock %}
+
+{% block content %}
+    <h1>Slett «{{ objekt }}»?</h1>
+    <p>Dette kan ikke angres.</p>
+    <form method="post" class="knapper">
+        {% csrf_token %}
+        <button type="submit" class="knapp fare-knapp">Ja, slett</button>
+        <a href="{% url 'profil:rediger' innhold objekt.pk %}">Avbryt</a>
+    </form>
+{% endblock %}

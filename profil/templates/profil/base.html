@@ -23,6 +23,16 @@
 
     <footer>
         <p>&copy; {% now "Y" %}</p>
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'profil:logg_ut' %}">
+                {% csrf_token %}
+                <span>Innlogget som {{ user.get_username }}</span>
+                {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
+                <button type="submit" class="knapp sekundar liten">Logg ut</button>
+            </form>
+        {% else %}
+            <a class="knapp sekundar liten" href="{% url 'profil:logg_inn' %}?next={{ request.path|urlencode }}">Logg inn</a>
+        {% endif %}
     </footer>
 </body>
 </html>
