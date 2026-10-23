@@ -4,7 +4,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}CV{% endblock %}</title>
+    <title>{% block title %}CV{% endblock %}{% if nettsted_profil %} – {{ nettsted_profil.navn }}{% endif %}</title>
+    {% if nettsted_profil.om_meg %}<meta name="description" content="{{ nettsted_profil.om_meg|truncatechars:160 }}">{% endif %}
+    {% if not sokbar %}<meta name="robots" content="noindex, nofollow">{% endif %}
     <link rel="stylesheet" href="{% static 'profil/style.css' %}">
 </head>
 <body>

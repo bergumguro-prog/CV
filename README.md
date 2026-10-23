@@ -55,7 +55,7 @@ python manage.py axes_reset
    source venv/bin/activate
    pip install -r requirements.txt
    ```
-3. Lag `.env` med en ny nøkkel, `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS=brukernavn.pythonanywhere.com` og `DJANGO_CSRF_TRUSTED_ORIGINS=https://brukernavn.pythonanywhere.com`.
+3. Lag `.env` med en ny nøkkel, `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS=brukernavn.pythonanywhere.com` og `DJANGO_CSRF_TRUSTED_ORIGINS=https://brukernavn.pythonanywhere.com`. Siden er skjult for søkemotorer til du setter `DJANGO_SOKBAR=True`.
 4. Klargjør databasen og statiske filer:
    ```bash
    python manage.py migrate
