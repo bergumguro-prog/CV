@@ -9,6 +9,17 @@
                 {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
             </div>
         </div>
+
+        {% if profil.lyd %}
+            <section class="lytt">
+                <h2>Lytt til CV-en min</h2>
+                <audio controls preload="none" src="{{ profil.lyd.url }}"></audio>
+                <details>
+                    <summary>Les teksten</summary>
+                    {{ profil.lyd_manus|linebreaks }}
+                </details>
+            </section>
+        {% endif %}
     {% else %}
         <h1>Velkommen</h1>
         <p>Legg inn profilen din i <a href="{% url 'admin:index' %}">admin</a>.</p>

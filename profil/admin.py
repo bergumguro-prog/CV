@@ -18,6 +18,7 @@ from .models import (
 @admin.register(Profil)
 class ProfilAdmin(admin.ModelAdmin):
     list_display = ["navn", "tittel", "epost"]
+    readonly_fields = ["lyd_manus"]
 
 
 @admin.register(Egenskap)

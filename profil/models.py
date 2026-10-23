@@ -9,6 +9,8 @@ class Profil(models.Model):
     epost = models.EmailField(blank=True)
     github = models.URLField(blank=True)
     linkedin = models.URLField(blank=True)
+    lyd = models.FileField(upload_to="lyd/", blank=True, help_text="Lages med «python manage.py lag_lyd».")
+    lyd_manus = models.TextField(blank=True, help_text="Teksten som er lest opp i lydfilen.")
 
     class Meta:
         verbose_name_plural = "profil"

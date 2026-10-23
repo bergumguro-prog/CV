@@ -129,6 +129,11 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# ElevenLabs for «Lytt til CV-en» (python manage.py lag_lyd)
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
+ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "")
+ELEVENLABS_MODEL = os.environ.get("ELEVENLABS_MODEL", "eleven_v4")
+
 # Opplastede filer (f.eks. profilbilde)
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
