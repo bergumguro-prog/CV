@@ -13,6 +13,8 @@ from .models import (
     ErfaringEgenskap,
     Fag,
     Ferdighet,
+    Idrettshendelse,
+    Idrettslag,
     Profil,
     Prosjekt,
     Utdanning,
@@ -31,6 +33,9 @@ class ModellTester(TestCase):
         self.assertEqual(str(Verv(rolle="Leder", organisasjon="Abakus")), "Leder, Abakus")
         self.assertEqual(str(Fag(emnekode="TDT4100", navn="OOP")), "TDT4100 OOP")
         self.assertEqual(str(Fag(navn="OOP")), "OOP")
+        self.assertEqual(str(Idrettslag(idrett="Håndball", lag="NTNUI")), "Håndball, NTNUI")
+        self.assertEqual(str(Idrettshendelse(navn="Oslo Maraton", resultat="3:45:12")), "Oslo Maraton – 3:45:12")
+        self.assertEqual(str(Idrettshendelse(navn="Oslo Maraton")), "Oslo Maraton")
 
     def test_erfaring_nyeste_forst(self):
         Erfaring.objects.create(stilling="Gammel", arbeidsgiver="A", fra_dato=date(2020, 1, 1))
@@ -107,6 +112,19 @@ class SideTester(TestCase):
         self.assertLess(tekst.index('class="vis-mer"'), tekst.index("Skjult tekst."))
         self.assertNotIn("2023 – 2023", tekst)
         self.assertInHTML('<span class="ar">2020 – nå</span>', tekst)
+
+    def test_idrett_vises(self):
+        response = self.client.get(reverse("profil:forside"))
+        self.assertNotContains(response, 'id="idrett"')
+
+        Idrettslag.objects.create(idrett="Håndball", lag="NTNUI D2", rolle="Spiller", fra_dato=date(2025, 1, 1))
+        Idrettshendelse.objects.create(navn="Oslo Maraton", dato=date(2026, 9, 20), resultat="3:45:12")
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, "Håndball, NTNUI D2")
+        self.assertContains(response, "Spiller")
+        self.assertContains(response, "Oslo Maraton – 3:45:12")
+        self.assertInHTML('<span class="ar">2025 – nå</span>', response.content.decode())
+        self.assertInHTML('<span class="ar">2026</span>', response.content.decode())
 
     def test_prosjektsiden_viser_prosjekter(self):
         Prosjekt.objects.create(tittel="CV-side", beskrivelse="Laget med Django", lenke="https://github.com")
@@ -214,7 +232,7 @@ class RedigeringTester(TestCase):
     def test_knapper_for_innlogget(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse("profil:forside"))
-        self.assertContains(response, "+ Legg til", count=4)
+        self.assertContains(response, "+ Legg til", count=6)
         self.assertContains(response, reverse("profil:rediger", args=["utdanning", self.utdanning.pk]))
         self.assertContains(response, "Logg ut")
 
@@ -279,6 +297,15 @@ class RedigeringTester(TestCase):
         data |= self.formset("egenskaper")
         self.client.post(reverse("profil:ny", args=["verv"]), data)
         self.assertIsNone(Verv.objects.get().til_dato)
+
+    def test_legg_til_maraton_med_egenskap(self):
+        self.client.force_login(self.admin)
+        data = {"navn": "Oslo Maraton", "dato": "2026-09-20", "resultat": "3:45:12", "beskrivelse": ""}
+        data |= self.formset("egenskaper", {"navn": "Utholdenhet", "forklaring": "Trente i fire måneder."})
+        response = self.client.post(reverse("profil:ny", args=["idrettshendelse"]), data)
+        self.assertRedirects(response, reverse("profil:forside") + "#idrettshendelse")
+        hendelse = Idrettshendelse.objects.get()
+        self.assertEqual(hendelse.egenskaper.get().forklaring, "Trente i fire måneder.")
 
     def test_ukjent_type_gir_404(self):
         self.client.force_login(self.admin)

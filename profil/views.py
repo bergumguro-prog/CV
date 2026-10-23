@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from .forms import TYPER
-from .models import Erfaring, Ferdighet, Profil, Prosjekt, Utdanning, Verv
+from .models import Erfaring, Ferdighet, Idrettshendelse, Idrettslag, Profil, Prosjekt, Utdanning, Verv
 
 
 def forside(request):
@@ -13,6 +13,8 @@ def forside(request):
         "erfaringer": Erfaring.objects.prefetch_related("egenskaper__egenskap"),
         "verv": Verv.objects.prefetch_related("egenskaper__egenskap"),
         "utdanninger": Utdanning.objects.prefetch_related("fag", "egenskaper__egenskap"),
+        "idrettslag": Idrettslag.objects.prefetch_related("egenskaper__egenskap"),
+        "idrettshendelser": Idrettshendelse.objects.prefetch_related("egenskaper__egenskap"),
         "ferdigheter": Ferdighet.objects.all(),
     })
 

@@ -3,6 +3,7 @@
         <details class="mer">
             <summary>{% include "profil/_overskrift.html" with utvidbar=True %}</summary>
             <div class="mer-innhold">
+                {% if oppforing.rolle %}<p class="rolle">{{ oppforing.rolle }}</p>{% endif %}
                 {{ oppforing.beskrivelse|linebreaks }}
                 {% if oppforing.detaljer %}{{ oppforing.detaljer|linebreaks }}{% endif %}
                 {% if oppforing.lenke %}<p><a href="{{ oppforing.lenke }}">Se prosjektet</a></p>{% endif %}
