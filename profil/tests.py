@@ -162,15 +162,12 @@ class LydTester(TestCase):
         Erfaring.objects.create(stilling="Gammel jobb", arbeidsgiver="Før", fra_dato=date(2020, 1, 1),
                                 til_dato=date(2021, 1, 1))
 
-    def test_manus_tar_med_det_som_pagar(self):
+    def test_manus_er_hilsen_og_om_meg(self):
         from .lyd import lag_manus
 
         manus = lag_manus(self.profil)
-        self.assertIn("Jeg heter Ola Nordmann.", manus)
-        self.assertIn("Jeg liker å kode.", manus)
-        self.assertIn("studerer jeg Datateknologi ved NTNU", manus)
-        self.assertIn("jobber jeg som assistent i Firma", manus)
-        self.assertNotIn("Gammel jobb", manus)
+        self.assertTrue(manus.startswith("Hei! Jeg heter Ola Nordmann.\n\nJeg liker å kode."))
+        self.assertNotIn("Assistent", manus)
 
     def test_kommandoen_lager_lyd_bare_nar_manus_endres(self):
         from unittest.mock import patch
@@ -200,6 +197,19 @@ class LydTester(TestCase):
         self.profil.save()
         with self.assertRaises(CommandError):
             call_command("lag_lyd", stdout=StringIO())
+
+    def test_lesbar_feilmelding_fra_elevenlabs(self):
+        import urllib.error
+        from unittest.mock import patch
+
+        from django.core.management import CommandError, call_command
+
+        svar = BytesIO(b'{"detail": {"message": "Free users cannot use library voices via the API."}}')
+        feil = urllib.error.HTTPError("url", 402, "Payment Required", {}, svar)
+        with override_settings(ELEVENLABS_API_KEY="nokkel", ELEVENLABS_VOICE_ID="stemme"), \
+                patch("profil.management.commands.lag_lyd.les_opp", side_effect=feil):
+            with self.assertRaisesMessage(CommandError, "ElevenLabs svarte 402: Free users cannot use library voices"):
+                call_command("lag_lyd", stdout=StringIO())
 
     def test_ingen_avspiller_uten_lyd(self):
         response = self.client.get(reverse("profil:forside"))
