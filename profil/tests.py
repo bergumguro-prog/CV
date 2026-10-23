@@ -162,15 +162,12 @@ class LydTester(TestCase):
         Erfaring.objects.create(stilling="Gammel jobb", arbeidsgiver="Før", fra_dato=date(2020, 1, 1),
                                 til_dato=date(2021, 1, 1))
 
-    def test_manus_tar_med_det_som_pagar(self):
+    def test_manus_er_hilsen_og_om_meg(self):
         from .lyd import lag_manus
 
         manus = lag_manus(self.profil)
-        self.assertIn("Jeg heter Ola Nordmann.", manus)
-        self.assertIn("Jeg liker å kode.", manus)
-        self.assertIn("studerer jeg Datateknologi ved NTNU", manus)
-        self.assertIn("jobber jeg som assistent i Firma", manus)
-        self.assertNotIn("Gammel jobb", manus)
+        self.assertTrue(manus.startswith("Hei! Jeg heter Ola Nordmann.\n\nJeg liker å kode."))
+        self.assertNotIn("Assistent", manus)
 
     def test_kommandoen_lager_lyd_bare_nar_manus_endres(self):
         from unittest.mock import patch
