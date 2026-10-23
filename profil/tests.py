@@ -348,3 +348,22 @@ class InnloggingTester(TestCase):
             self.logg_inn("feil", ip="10.0.0.1")
         response = self.logg_inn("riktig-passord", ip="10.0.0.2")
         self.assertRedirects(response, reverse("profil:forside"))
+
+
+class TittelOgSokbarhetTester(TestCase):
+    def test_navnet_i_tittelen(self):
+        response = self.client.get(reverse("profil:om_meg"))
+        self.assertContains(response, "<title>Om meg</title>", html=True)
+
+        Profil.objects.create(navn="Ola Nordmann", om_meg="Jeg liker å kode.")
+        response = self.client.get(reverse("profil:om_meg"))
+        self.assertContains(response, "<title>Om meg – Ola Nordmann</title>", html=True)
+        self.assertContains(response, '<meta name="description" content="Jeg liker å kode.">', html=True)
+
+    def test_skjult_for_sokemotorer_som_standard(self):
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, '<meta name="robots" content="noindex, nofollow">', html=True)
+
+        with override_settings(SOKBAR=True):
+            response = self.client.get(reverse("profil:forside"))
+        self.assertNotContains(response, 'name="robots"')

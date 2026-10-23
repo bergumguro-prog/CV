@@ -80,6 +80,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "profil.context_processors.nettsted",
             ],
         },
     },
@@ -135,6 +136,9 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Om søkemotorer får ta med siden. Av som standard; slå på med DJANGO_SOKBAR=True
+SOKBAR = os.environ.get("DJANGO_SOKBAR", "False") == "True"
 
 # Innlogging for å redigere CV-en
 LOGIN_URL = "profil:logg_inn"
