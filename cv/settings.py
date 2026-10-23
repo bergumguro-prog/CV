@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "axes",
     "profil",
 ]
 
@@ -59,6 +60,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "axes.middleware.AxesMiddleware",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 ROOT_URLCONF = "cv.urls"
@@ -133,6 +140,15 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 LOGIN_URL = "profil:logg_inn"
 LOGIN_REDIRECT_URL = "profil:forside"
 LOGOUT_REDIRECT_URL = "profil:forside"
+
+# Sperr innlogging etter for mange feilforsøk (django-axes)
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # timer
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_PARAMETERS = ["ip_address"]
+AXES_LOCKOUT_TEMPLATE = "profil/sperret.html"
+# PythonAnywhere ligger bak en proxy som setter X-Real-IP til den ekte adressen
+AXES_IPWARE_META_PRECEDENCE_ORDER = ["HTTP_X_REAL_IP", "REMOTE_ADDR"]
 
 # ElevenLabs for «Lytt til CV-en» (python manage.py lag_lyd)
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")

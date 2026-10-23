@@ -207,7 +207,7 @@ class RedigeringTester(TestCase):
         self.assertRedirects(response, reverse("profil:logg_inn") + "?next=/rediger/erfaring/ny/")
 
         response = self.client.get(reverse("profil:forside"))
-        self.assertContains(response, "Logg inn")
+        self.assertNotContains(response, "Logg inn")
         self.assertNotContains(response, "+ Legg til")
         self.assertNotContains(response, ">Rediger<")
 
@@ -261,3 +261,31 @@ class RedigeringTester(TestCase):
     def test_ukjent_type_gir_404(self):
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get("/rediger/hemmelig/ny/").status_code, 404)
+
+
+class InnloggingTester(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        User.objects.create_superuser("guro", "guro@example.com", "riktig-passord")
+        self.url = reverse("profil:logg_inn")
+
+    def logg_inn(self, passord, ip="10.0.0.1"):
+        return self.client.post(self.url, {"username": "guro", "password": passord}, HTTP_X_REAL_IP=ip)
+
+    def test_innlogging_virker(self):
+        response = self.logg_inn("riktig-passord")
+        self.assertRedirects(response, reverse("profil:forside"))
+
+    def test_sperret_etter_fem_feilforsok(self):
+        for _ in range(5):
+            self.logg_inn("feil")
+        response = self.logg_inn("riktig-passord")
+        self.assertEqual(response.status_code, 429)
+        self.assertContains(response, "Midlertidig sperret", status_code=429)
+
+    def test_sperren_gjelder_bare_samme_ip(self):
+        for _ in range(5):
+            self.logg_inn("feil", ip="10.0.0.1")
+        response = self.logg_inn("riktig-passord", ip="10.0.0.2")
+        self.assertRedirects(response, reverse("profil:forside"))
