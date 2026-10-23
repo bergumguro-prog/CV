@@ -1,7 +1,7 @@
 import shutil
 import tempfile
 from datetime import date
-from io import BytesIO
+from io import BytesIO, StringIO
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -120,3 +120,57 @@ class ProfilbildeTester(TestCase):
             )
             response = self.client.get(reverse("profil:forside"))
         self.assertContains(response, '<img src="/media/profil/ola')
+
+
+class LydTester(TestCase):
+    def setUp(self):
+        self.media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.media)
+        self.profil = Profil.objects.create(navn="Ola Nordmann", tittel="Student", om_meg="Jeg liker å kode.")
+        Utdanning.objects.create(studie="Datateknologi", skole="NTNU", fra_dato=date(2025, 1, 1))
+        Erfaring.objects.create(stilling="Assistent", arbeidsgiver="Firma", fra_dato=date(2025, 1, 1))
+        Erfaring.objects.create(stilling="Gammel jobb", arbeidsgiver="Før", fra_dato=date(2020, 1, 1),
+                                til_dato=date(2021, 1, 1))
+
+    def test_manus_tar_med_det_som_pagar(self):
+        from .lyd import lag_manus
+
+        manus = lag_manus(self.profil)
+        self.assertIn("Jeg heter Ola Nordmann.", manus)
+        self.assertIn("Jeg liker å kode.", manus)
+        self.assertIn("studerer jeg Datateknologi ved NTNU", manus)
+        self.assertIn("jobber jeg som assistent i Firma", manus)
+        self.assertNotIn("Gammel jobb", manus)
+
+    def test_kommandoen_lager_lyd_bare_nar_manus_endres(self):
+        from unittest.mock import patch
+
+        from django.core.management import call_command
+
+        with override_settings(MEDIA_ROOT=self.media, ELEVENLABS_API_KEY="nokkel", ELEVENLABS_VOICE_ID="stemme"), \
+                patch("profil.management.commands.lag_lyd.les_opp", return_value=b"mp3") as les_opp:
+            call_command("lag_lyd", stdout=StringIO())
+            call_command("lag_lyd", stdout=StringIO())
+            self.assertEqual(les_opp.call_count, 1)
+
+            self.profil.refresh_from_db()
+            self.assertIn("Ola Nordmann", self.profil.lyd_manus)
+            response = self.client.get(reverse("profil:forside"))
+            self.assertContains(response, "<audio")
+
+            self.profil.om_meg = "Ny tekst."
+            self.profil.save()
+            call_command("lag_lyd", stdout=StringIO())
+            self.assertEqual(les_opp.call_count, 2)
+
+    def test_kommandoen_stopper_ved_fyll_inn(self):
+        from django.core.management import CommandError, call_command
+
+        self.profil.om_meg = "[FYLL INN: noe om meg]"
+        self.profil.save()
+        with self.assertRaises(CommandError):
+            call_command("lag_lyd", stdout=StringIO())
+
+    def test_ingen_avspiller_uten_lyd(self):
+        response = self.client.get(reverse("profil:forside"))
+        self.assertNotContains(response, "<audio")

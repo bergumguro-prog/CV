@@ -86,6 +86,31 @@ main {
     color: var(--dempet);
 }
 
+.lytt {
+    margin-top: 24px;
+    padding: 16px;
+    border: 1px solid var(--linje);
+    border-radius: 12px;
+}
+
+.lytt h2 {
+    margin: 0 0 12px;
+    padding: 0;
+    border: 0;
+    font-size: 1.1rem;
+}
+
+.lytt audio {
+    width: 100%;
+}
+
+.lytt summary {
+    margin-top: 8px;
+    cursor: pointer;
+    color: var(--aksent);
+    font-size: 0.9rem;
+}
+
 h1 {
     font-size: 2rem;
     margin: 0 0 8px;
