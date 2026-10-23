@@ -234,6 +234,27 @@ section > .seksjon-topp {
     border: 0;
 }
 
+.underseksjon {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.underseksjon h4 {
+    margin: 0;
+    color: var(--dempet);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.rolle {
+    font-weight: 600;
+}
+
 /* Redigering (vises bare for innloggede) */
 .punkt.redigerbar {
     display: grid;

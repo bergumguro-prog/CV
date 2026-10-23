@@ -128,6 +128,47 @@ class Fag(models.Model):
         return f"{self.emnekode} {self.navn}".strip()
 
 
+class Idrettslag(models.Model):
+    idrett = models.CharField(max_length=50)
+    lag = models.CharField("lag eller klubb", max_length=100)
+    rolle = models.CharField("rolle eller nivå", max_length=100, blank=True)
+    fra_dato = models.DateField()
+    til_dato = models.DateField(null=True, blank=True)
+    beskrivelse = models.TextField(blank=True)
+    detaljer = models.TextField(blank=True, help_text="Vises når man trykker «Vis mer».")
+
+    class Meta:
+        verbose_name = "lag eller klubb"
+        verbose_name_plural = "lag og klubber"
+        ordering = ["-fra_dato"]
+
+    @property
+    def har_detaljer(self):
+        return bool(self.rolle or self.beskrivelse or self.detaljer) or bool(self.egenskaper.all())
+
+    def __str__(self):
+        return f"{self.idrett}, {self.lag}"
+
+
+class Idrettshendelse(models.Model):
+    navn = models.CharField(max_length=100, help_text="F.eks. Oslo Maraton 2026.")
+    dato = models.DateField()
+    resultat = models.CharField(max_length=100, blank=True, help_text="F.eks. 3:45:12 eller 2. plass.")
+    beskrivelse = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "konkurranse eller løp"
+        verbose_name_plural = "konkurranser og løp"
+        ordering = ["-dato"]
+
+    @property
+    def har_detaljer(self):
+        return bool(self.beskrivelse) or bool(self.egenskaper.all())
+
+    def __str__(self):
+        return f"{self.navn} – {self.resultat}" if self.resultat else self.navn
+
+
 class Egenskap(models.Model):
     navn = models.CharField(max_length=50, unique=True)
 
@@ -174,3 +215,19 @@ class VervEgenskap(EgenskapKobling):
 
     class Meta(EgenskapKobling.Meta):
         constraints = [models.UniqueConstraint(fields=["verv", "egenskap"], name="unik_verv_egenskap")]
+
+
+class IdrettslagEgenskap(EgenskapKobling):
+    idrettslag = models.ForeignKey(Idrettslag, on_delete=models.CASCADE, related_name="egenskaper")
+
+    class Meta(EgenskapKobling.Meta):
+        constraints = [models.UniqueConstraint(fields=["idrettslag", "egenskap"], name="unik_idrettslag_egenskap")]
+
+
+class IdrettshendelseEgenskap(EgenskapKobling):
+    idrettshendelse = models.ForeignKey(Idrettshendelse, on_delete=models.CASCADE, related_name="egenskaper")
+
+    class Meta(EgenskapKobling.Meta):
+        constraints = [
+            models.UniqueConstraint(fields=["idrettshendelse", "egenskap"], name="unik_idrettshendelse_egenskap")
+        ]

@@ -6,6 +6,10 @@ from .models import (
     ErfaringEgenskap,
     Fag,
     Ferdighet,
+    Idrettshendelse,
+    IdrettshendelseEgenskap,
+    Idrettslag,
+    IdrettslagEgenskap,
     Profil,
     Prosjekt,
     Utdanning,
@@ -65,6 +69,30 @@ class VervAdmin(admin.ModelAdmin):
 class UtdanningAdmin(admin.ModelAdmin):
     list_display = ["studie", "skole", "fra_dato", "til_dato"]
     inlines = [FagInline, UtdanningEgenskapInline]
+
+
+class IdrettslagEgenskapInline(admin.StackedInline):
+    model = IdrettslagEgenskap
+    autocomplete_fields = ["egenskap"]
+    extra = 0
+
+
+class IdrettshendelseEgenskapInline(admin.StackedInline):
+    model = IdrettshendelseEgenskap
+    autocomplete_fields = ["egenskap"]
+    extra = 0
+
+
+@admin.register(Idrettslag)
+class IdrettslagAdmin(admin.ModelAdmin):
+    list_display = ["idrett", "lag", "rolle", "fra_dato", "til_dato"]
+    inlines = [IdrettslagEgenskapInline]
+
+
+@admin.register(Idrettshendelse)
+class IdrettshendelseAdmin(admin.ModelAdmin):
+    list_display = ["navn", "dato", "resultat"]
+    inlines = [IdrettshendelseEgenskapInline]
 
 
 @admin.register(Ferdighet)

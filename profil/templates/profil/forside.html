@@ -64,6 +64,34 @@
         </section>
     {% endif %}
 
+    {% if idrettslag or idrettshendelser or user.is_staff %}
+        <section id="idrett">
+            <div class="seksjon-topp">
+                <h2>Idrett</h2>
+            </div>
+
+            {% if idrettslag or user.is_staff %}
+                <div class="underseksjon" id="idrettslag">
+                    <h4>Lag og klubber</h4>
+                    {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'idrettslag' %}">+ Legg til</a>{% endif %}
+                </div>
+                {% for lag in idrettslag %}
+                    {% include "profil/_punkt.html" with oppforing=lag innhold="idrettslag" %}
+                {% endfor %}
+            {% endif %}
+
+            {% if idrettshendelser or user.is_staff %}
+                <div class="underseksjon" id="idrettshendelse">
+                    <h4>Konkurranser og løp</h4>
+                    {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'idrettshendelse' %}">+ Legg til</a>{% endif %}
+                </div>
+                {% for hendelse in idrettshendelser %}
+                    {% include "profil/_punkt.html" with oppforing=hendelse innhold="idrettshendelse" %}
+                {% endfor %}
+            {% endif %}
+        </section>
+    {% endif %}
+
     {% if ferdigheter or user.is_staff %}
         <section id="ferdighet">
             <div class="seksjon-topp">
