@@ -4,6 +4,7 @@
 // - Pauser når karusellen er krympet til banner, eller fanen er skjult
 // - Langsom zoom («Ken Burns») på bildet som vises, bare når karusellen er i full størrelse
 // - Reserveløsning for scroll-effekten i nettlesere uten CSS scroll-drevne animasjoner
+// - Forstørret profilbilde i en dialog (nederst i filen)
 (() => {
     "use strict";
 
@@ -30,6 +31,7 @@
     let pekerOver = false;
     let tidtaker = null;
     let vedToppen = true; // karusellen er i full størrelse (ikke begynt å krympe)
+    let dialogApen = false; // profilbildet er forstørret; brukerens egen pause endres ikke
 
     // Zoomen varer like lenge som et bilde vises, pluss overtoningen ut
     hero.style.setProperty("--zoom-tid", `${INTERVALL + OVERGANG}ms`);
@@ -67,7 +69,7 @@
 
     function zoomSkalGa() {
         const karusellGar = lysbilder.length < 2 || (onskerAvspilling && !fokusInne && !pekerOver);
-        return vedToppen && !document.hidden && karusellGar;
+        return vedToppen && !document.hidden && !dialogApen && karusellGar;
     }
 
     function oppdaterZoom() {
@@ -78,7 +80,7 @@
     // ---- Automatisk avspilling --------------------------------------------------
 
     function skalSpille() {
-        return onskerAvspilling && !samlet && !document.hidden && !fokusInne && !pekerOver;
+        return onskerAvspilling && !samlet && !document.hidden && !fokusInne && !pekerOver && !dialogApen;
     }
 
     function oppdaterAvspilling() {
@@ -201,6 +203,115 @@
     }
 
     document.addEventListener("visibilitychange", oppdaterZoom);
+    document.addEventListener("profilbilde:apnet", () => { dialogApen = true; oppdaterAvspilling(); });
+    document.addEventListener("profilbilde:lukket", () => { dialogApen = false; oppdaterAvspilling(); });
     if (lysbilder.length) startZoom(lysbilder[aktiv]);
     oppdaterAvspilling();
+})();
+
+// Forstørret profilbilde.
+// - Knappen rundt profilbildet åpner en <dialog> med en større, skarpere utgave
+// - Bildet glir fra sin plass til midten med View Transitions der det støttes,
+//   ellers tones det inn og skaleres litt. Bare toning ved «Reduser bevegelse»
+// - Lukkes med Esc, klikk utenfor bildet eller ×. Fokus går tilbake til knappen
+// - Karusellen og zoomen pauses mens bildet er åpent
+(() => {
+    "use strict";
+
+    const dialog = document.querySelector(".profilbilde-dialog");
+    if (!dialog) return;
+
+    const stort = dialog.querySelector(".profilbilde-stor");
+    const lukkKnapp = dialog.querySelector(".profilbilde-lukk");
+    const roligBevegelse = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const NAVN = "profilbilde"; // view-transition-name
+
+    let knapp = null; // knappen som åpnet dialogen
+    let lukker = false;
+
+    const kanGli = () => "startViewTransition" in document && !roligBevegelse.matches;
+    const lillebilde = () => knapp && knapp.querySelector("img");
+
+    // Hent det store bildet første gang, og vent til det er klart så overgangen ikke viser et tomt bilde
+    async function lastStortBilde() {
+        if (!stort.getAttribute("src")) stort.src = stort.dataset.src;
+        try {
+            await stort.decode();
+        } catch {
+            // Vis dialogen uansett; bildet kommer når det er lastet
+        }
+    }
+
+    async function apne(fra) {
+        if (dialog.open) return;
+        knapp = fra;
+        document.dispatchEvent(new CustomEvent("profilbilde:apnet"));
+        await lastStortBilde();
+
+        if (kanGli()) {
+            dialog.dataset.overgang = "gli";
+            lillebilde().style.viewTransitionName = NAVN;
+            await document.startViewTransition(() => {
+                lillebilde().style.viewTransitionName = "";
+                stort.style.viewTransitionName = NAVN;
+                dialog.showModal();
+            }).finished;
+            stort.style.viewTransitionName = "";
+        } else {
+            dialog.dataset.overgang = "ton";
+            dialog.showModal();
+        }
+    }
+
+    async function lukk() {
+        if (!dialog.open || lukker) return;
+        lukker = true;
+        if (kanGli() && lillebilde()) {
+            stort.style.viewTransitionName = NAVN;
+            await document.startViewTransition(() => {
+                stort.style.viewTransitionName = "";
+                lillebilde().style.viewTransitionName = NAVN;
+                dialog.close();
+            }).finished;
+            lillebilde().style.viewTransitionName = "";
+        } else {
+            // Spill ut-animasjonen i CSS, og lukk når den er ferdig
+            dialog.classList.add("lukkes");
+            await Promise.race([
+                new Promise((ferdig) => dialog.addEventListener("animationend", ferdig, { once: true })),
+                new Promise((ferdig) => setTimeout(ferdig, 400)),
+            ]);
+            dialog.classList.remove("lukkes");
+            dialog.close();
+        }
+        lukker = false;
+    }
+
+    document.querySelectorAll(".profilbilde-knapp").forEach((k) => {
+        k.addEventListener("click", () => apne(k));
+        // Begynn å hente det store bildet allerede når musen er over eller knappen får fokus,
+        // så overgangen kan starte med en gang ved klikk
+        const forhandslast = () => { if (!stort.getAttribute("src")) stort.src = stort.dataset.src; };
+        k.addEventListener("pointerenter", forhandslast, { once: true });
+        k.addEventListener("focus", forhandslast, { once: true });
+    });
+    lukkKnapp.addEventListener("click", lukk);
+
+    // Esc: vis lukke-animasjonen i stedet for å lukke brått
+    dialog.addEventListener("cancel", (e) => {
+        e.preventDefault();
+        lukk();
+    });
+
+    // Klikk på det mørke området utenfor bildet (det treffer selve <dialog>-elementet)
+    dialog.addEventListener("click", (e) => {
+        if (e.target === dialog) lukk();
+    });
+
+    // Rydd opp uansett hvordan dialogen ble lukket. Fokus går automatisk tilbake til knappen.
+    dialog.addEventListener("close", () => {
+        lukker = false;
+        dialog.classList.remove("lukkes");
+        document.dispatchEvent(new CustomEvent("profilbilde:lukket"));
+    });
 })();

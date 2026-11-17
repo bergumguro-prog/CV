@@ -21,12 +21,43 @@ class Profil(models.Model):
     linkedin = models.URLField(blank=True)
     lyd = models.FileField(upload_to="lyd/", blank=True, help_text="Lages med «python manage.py lag_lyd».")
     lyd_manus = models.TextField(blank=True, help_text="Teksten som er lest opp i lydfilen.")
+    # Større, skarp utgave til forstørrelsen på forsiden. Lages av save().
+    bilde_stor = models.ImageField(upload_to="profil/", blank=True, editable=False)
+
+    STOR_BREDDE = 1200
 
     class Meta:
         verbose_name_plural = "profil"
 
     def __str__(self):
         return self.navn
+
+    @property
+    def stort_bilde_url(self):
+        """Den store utgaven, eller originalen hvis den ikke er laget ennå."""
+        return self.bilde_stor.url if self.bilde_stor else self.bilde.url
+
+    def save(self, *args, **kwargs):
+        nytt_bilde = bool(self.bilde) and not self.bilde._committed
+        super().save(*args, **kwargs)
+        gammel = self.bilde_stor.name if self.bilde_stor else ""
+        if self.bilde and (nytt_bilde or not self.bilde_stor):
+            self.bilde_stor.save(f"{Path(self.bilde.name).stem}-stor.webp", self._lag_stort_bilde(), save=False)
+        elif not self.bilde and self.bilde_stor:
+            self.bilde_stor = ""
+        else:
+            return
+        super().save(update_fields=["bilde_stor"])
+        _slett(self.bilde.storage, [gammel], behold=[self.bilde_stor.name])
+
+    def _lag_stort_bilde(self):
+        with self.bilde.open("rb") as fil, Image.open(fil) as original:
+            # Mobilbilder lagres ofte liggende med en «roter»-merknad; snu dem riktig først
+            bilde = ImageOps.exif_transpose(original).convert("RGB")
+        if bilde.width > self.STOR_BREDDE:
+            hoyde = round(bilde.height * self.STOR_BREDDE / bilde.width)
+            bilde = bilde.resize((self.STOR_BREDDE, hoyde), Image.Resampling.LANCZOS)
+        return _som_webp(bilde, kvalitet=85)
 
 
 class Erfaring(models.Model):
@@ -476,9 +507,9 @@ def _i_format(bilde, bredde):
     return bilde.resize((bredde, hoyde), Image.Resampling.LANCZOS)
 
 
-def _som_webp(bilde):
+def _som_webp(bilde, kvalitet=82):
     fil = BytesIO()
-    bilde.save(fil, "WEBP", quality=82, method=5)
+    bilde.save(fil, "WEBP", quality=kvalitet, method=5)
     return ContentFile(fil.getvalue())
 
 

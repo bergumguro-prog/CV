@@ -769,3 +769,86 @@ class StatiskeFilerTester(TestCase):
         with override_settings(STATIC_ROOT=mappe, DEBUG=False):
             response = self.client.get(reverse("profil:forside"))
         self.assertContains(response, 'href="/static/profil/style.css"')
+
+
+class StortProfilbildeTester(ForsidebildeOppsett):
+    """Profilbildet kan forstørres på forsiden, med en større og skarpere utgave."""
+
+    def storrelse(self, fil):
+        from PIL import Image
+
+        with Image.open(fil.path) as bilde:
+            return bilde.format, bilde.size
+
+    def test_stor_utgave_lages_ved_lagring(self):
+        profil = Profil.objects.create(navn="Ola Nordmann", bilde=lag_bilde(3000, 4000, "ola.png"))
+        self.assertEqual(self.storrelse(profil.bilde_stor), ("WEBP", (1200, 1600)))
+        self.assertEqual(profil.stort_bilde_url, profil.bilde_stor.url)
+
+    def test_sma_bilder_forstorres_ikke(self):
+        profil = Profil.objects.create(navn="Ola Nordmann", bilde=lag_bilde(400, 500, "ola.png"))
+        self.assertEqual(self.storrelse(profil.bilde_stor), ("WEBP", (400, 500)))
+
+    def test_mobilbilde_snus_riktig_vei(self):
+        from PIL import Image
+
+        exif = Image.Exif()
+        exif[0x0112] = 6  # «roter 90°»
+        profil = Profil.objects.create(navn="Ola", bilde=lag_bilde(1600, 1200, "mobil.jpg", "JPEG", exif=exif))
+        self.assertEqual(self.storrelse(profil.bilde_stor), ("WEBP", (1200, 1600)))
+
+    def test_lages_ikke_pa_nytt_uten_nytt_bilde(self):
+        profil = Profil.objects.create(navn="Ola", bilde=lag_bilde(1600, 1200, "ola.png"))
+        navn = profil.bilde_stor.name
+        profil.tittel = "Utvikler"
+        profil.save()
+        self.assertEqual(Profil.objects.get().bilde_stor.name, navn)
+
+    def test_gammel_stor_utgave_slettes(self):
+        import os
+
+        profil = Profil.objects.create(navn="Ola", bilde=lag_bilde(1600, 1200, "ola.png"))
+        gammel = profil.bilde_stor.path
+        profil.bilde = lag_bilde(1600, 1200, "ny.png")
+        profil.save()
+        self.assertFalse(os.path.exists(gammel))
+        self.assertTrue(os.path.exists(profil.bilde_stor.path))
+
+        stor = profil.bilde_stor.path
+        profil.bilde = ""
+        profil.save()
+        self.assertFalse(os.path.exists(stor))
+        self.assertFalse(Profil.objects.get().bilde_stor)
+
+    def test_kommandoen_lager_manglende_stor_utgave(self):
+        from django.core.management import call_command
+
+        Profil.objects.create(navn="Ola", bilde=lag_bilde(1600, 1200, "ola.png"))
+        Profil.objects.update(bilde_stor="")
+        call_command("lag_forsidebilder", stdout=StringIO())
+        self.assertTrue(Profil.objects.get().bilde_stor)
+
+    def test_profilbildet_er_en_knapp_med_dialog(self):
+        profil = Profil.objects.create(navn="Ola Nordmann", bilde=lag_bilde(1600, 1200, "ola.png"))
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, 'aria-label="Vis større bilde av Ola Nordmann" aria-haspopup="dialog"')
+        self.assertContains(response, '<dialog class="profilbilde-dialog" aria-label="Profilbilde av Ola Nordmann">')
+        # Det store bildet lastes først når dialogen åpnes
+        self.assertContains(response, f'data-src="{profil.bilde_stor.url}"')
+        self.assertNotContains(response, f' src="{profil.bilde_stor.url}"')  # bare data-src
+        self.assertContains(response, 'aria-label="Lukk"')
+        self.assertContains(response, "forside.js")  # også uten karusell
+
+    def test_knapp_ogsa_i_karusellen(self):
+        Profil.objects.create(navn="Ola Nordmann", bilde=lag_bilde(1600, 1200, "ola.png"))
+        self.nytt_bilde()
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, 'class="profilbilde-knapp"', count=1)
+        self.assertContains(response, 'class="hero-portrett"')
+
+    def test_ingenting_klikkbart_uten_profilbilde(self):
+        Profil.objects.create(navn="Ola Nordmann")
+        response = self.client.get(reverse("profil:forside"))
+        self.assertNotContains(response, "profilbilde-knapp")
+        self.assertNotContains(response, "profilbilde-dialog")
+        self.assertNotContains(response, "forside.js")

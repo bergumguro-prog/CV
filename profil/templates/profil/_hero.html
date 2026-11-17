@@ -18,7 +18,7 @@
     <div class="hero-innhold">
         <div class="hero-tekst">
             {% if profil %}
-                {% if profil.bilde %}<img class="hero-portrett" src="{{ profil.bilde.url }}" alt="" width="72" height="72">{% endif %}
+                {% if profil.bilde %}<button type="button" class="profilbilde-knapp" aria-label="Vis større bilde av {{ profil.navn }}" aria-haspopup="dialog"><img class="hero-portrett" src="{{ profil.bilde.url }}" alt="" width="72" height="72"></button>{% endif %}
                 <h1>{{ profil.navn }}</h1>
                 {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
             {% endif %}
