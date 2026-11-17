@@ -1115,7 +1115,9 @@ li > span {
 
 @media (min-width: 768px) {
     :root {
-        --hero-hoyde: max(76svh, 26rem);
+        /* Aldri høyere enn utsnittets format (--utsnitt-forhold settes i base.html fra Python),
+           så hele utsnittet vises når vinduet er smalt og høyt */
+        --hero-hoyde: max(min(76svh, calc(100vw / (var(--utsnitt-forhold, 16 / 9)))), 26rem);
         --banner-hoyde: 64px;
     }
 }
@@ -1244,11 +1246,14 @@ html:has(.hero) {
     opacity: 1;
 }
 
+/* Bildet er allerede beskåret til det valgte utsnittet. Midten av utsnittet holdes i
+   midten, så det viktigste også er med i den smale banner-stripen og på smale skjermer. */
 .hero-bilde img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: 50% 50%;
 }
 
 .hero-bilde figcaption {

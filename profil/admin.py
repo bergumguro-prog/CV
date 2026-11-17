@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from .forms import ForsidebildeSkjema
 from .models import (
     Egenskap,
     Erfaring,
@@ -109,6 +110,6 @@ class ProsjektAdmin(admin.ModelAdmin):
 
 @admin.register(Forsidebilde)
 class ForsidebildeAdmin(admin.ModelAdmin):
+    form = ForsidebildeSkjema
     list_display = ["alt_tekst", "bildetekst", "rekkefolge", "aktiv"]
     list_editable = ["rekkefolge", "aktiv"]
-    readonly_fields = ["bredde", "hoyde"]

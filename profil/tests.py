@@ -394,61 +394,195 @@ class ForsidebildeOppsett(TestCase):
         return Forsidebilde.objects.create(**felt)
 
 
+def lag_todelt_bilde(bredde, hoyde):
+    """Rød venstre halvdel og blå høyre halvdel, for å sjekke hvilket utsnitt som ble brukt."""
+    from PIL import Image
+
+    bilde = Image.new("RGB", (bredde, hoyde), (255, 0, 0))
+    bilde.paste((0, 0, 255), (bredde // 2, 0, bredde, hoyde))
+    fil = BytesIO()
+    bilde.save(fil, "PNG")
+    return SimpleUploadedFile("todelt.png", fil.getvalue(), content_type="image/png")
+
+
 class ForsidebildeModellTester(ForsidebildeOppsett):
+    def storrelse(self, fil):
+        from PIL import Image
+
+        with Image.open(fil.path) as bilde:
+            return bilde.format, bilde.size
+
     def test_str_og_rekkefolge(self):
         andre = self.nytt_bilde(alt_tekst="Andre", rekkefolge=2)
         forste = self.nytt_bilde(alt_tekst="Første", rekkefolge=1)
         self.assertEqual(str(forste), "Første")
         self.assertEqual(list(Forsidebilde.objects.all()), [forste, andre])
 
-    def test_store_bilder_skaleres_ned_i_to_storrelser(self):
-        from PIL import Image
+    def test_originalen_lagres_uendret(self):
+        opplastet = lag_bilde(3000, 1500)
+        innhold = opplastet.read()
+        opplastet.seek(0)
+        bilde = self.nytt_bilde(bilde=opplastet)
+        with open(bilde.bilde.path, "rb") as fil:
+            self.assertEqual(fil.read(), innhold)
+        self.assertEqual((bilde.original_bredde, bilde.original_hoyde), (3000, 1500))
 
-        bilde = self.nytt_bilde()
-        self.assertEqual((bilde.bredde, bilde.hoyde), (2400, 1200))
-        with Image.open(bilde.bilde.path) as stor, Image.open(bilde.bilde_liten.path) as liten:
-            self.assertEqual((stor.format, stor.size), ("JPEG", (2400, 1200)))
-            self.assertEqual((liten.format, liten.size), ("JPEG", (1200, 600)))
-        self.assertEqual(bilde.srcset, f"{bilde.bilde_liten.url} 1200w, {bilde.bilde.url} 2400w")
+    def test_liggende_bilde_far_midtstilt_utsnitt_i_to_storrelser(self):
+        bilde = self.nytt_bilde(bilde=lag_bilde(3000, 1500))
+        # Største 16:9-utsnitt: 2667 × 1500 piksler midt i bildet
+        self.assertAlmostEqual(bilde.utsnitt_bredde, 2666.667 / 3000 * 100, places=2)
+        self.assertAlmostEqual(bilde.utsnitt_x, (3000 - 2666.667) / 2 / 3000 * 100, places=2)
+        self.assertEqual((bilde.utsnitt_y, bilde.utsnitt_hoyde), (0, 100))
+        self.assertEqual(self.storrelse(bilde.bilde_stor), ("WEBP", (2400, 1350)))
+        self.assertEqual(self.storrelse(bilde.bilde_liten), ("WEBP", (1200, 675)))
+        self.assertEqual((bilde.bredde, bilde.hoyde), (2400, 1350))
+        self.assertEqual(bilde.srcset, f"{bilde.bilde_liten.url} 1200w, {bilde.bilde_stor.url} 2400w")
+        self.assertEqual(bilde.vis_url, bilde.bilde_stor.url)
 
-    def test_sma_bilder_blir_ikke_forstorret(self):
-        bilde = self.nytt_bilde(bilde=lag_bilde(800, 600))
-        self.assertEqual((bilde.bredde, bilde.hoyde), (800, 600))
-        self.assertEqual(bilde.srcset, f"{bilde.bilde.url} 800w")
+    def test_staende_bilde(self):
+        bilde = self.nytt_bilde(bilde=lag_bilde(2000, 3000))
+        self.assertEqual(self.storrelse(bilde.bilde_stor), ("WEBP", (2000, 1125)))  # aldri forstørret
+        self.assertEqual(self.storrelse(bilde.bilde_liten), ("WEBP", (1200, 675)))
+        self.assertAlmostEqual(bilde.utsnitt_y, (3000 - 1125) / 2 / 3000 * 100, places=3)
 
-    def test_mobilbilder_snus_riktig_vei(self):
+    def test_mobilbilde_snus_riktig_vei_for_beskjaering(self):
         from PIL import Image
 
         exif = Image.Exif()
         exif[0x0112] = 6  # «roter 90°», slik mange mobilkameraer lagrer bilder
-        bilde = self.nytt_bilde(bilde=lag_bilde(300, 200, "mobil.jpg", "JPEG", exif=exif))
-        self.assertEqual((bilde.bredde, bilde.hoyde), (200, 300))
+        bilde = self.nytt_bilde(bilde=lag_bilde(3000, 2000, "mobil.jpg", "JPEG", exif=exif))
+        self.assertEqual((bilde.original_bredde, bilde.original_hoyde), (2000, 3000))
+        self.assertEqual(self.storrelse(bilde.bilde_stor), ("WEBP", (2000, 1125)))
 
-    def test_filene_slettes_med_bildet(self):
+    def test_det_valgte_utsnittet_brukes(self):
+        from PIL import Image
+
+        # Høyre halvdel (blå) av et 3200 × 1800-bilde er nøyaktig 16:9
+        bilde = self.nytt_bilde(bilde=lag_todelt_bilde(3200, 1800),
+                                utsnitt_x=50, utsnitt_y=25, utsnitt_bredde=50, utsnitt_hoyde=50)
+        with Image.open(bilde.bilde_stor.path) as utsnitt:
+            self.assertEqual(utsnitt.size, (1600, 900))
+            for punkt in [(5, 5), (800, 450), (1590, 890)]:
+                rod, _, bla = utsnitt.convert("RGB").getpixel(punkt)
+                self.assertGreater(bla, 200)
+                self.assertLess(rod, 60)
+
+    def test_lages_bare_pa_nytt_nar_noe_endres(self):
         import os
 
         bilde = self.nytt_bilde()
-        filer = [bilde.bilde.path, bilde.bilde_liten.path]
-        bilde.delete()
-        self.assertFalse(any(os.path.exists(f) for f in filer))
+        forste = (bilde.bilde_stor.name, bilde.bilde_liten.name, bilde.generert_fra)
+
+        bilde.alt_tekst = "Ny tekst"
+        bilde.save()
+        Forsidebilde.objects.get().save()
+        bilde.refresh_from_db()
+        self.assertEqual((bilde.bilde_stor.name, bilde.bilde_liten.name, bilde.generert_fra), forste)
+
+        bilde.utsnitt_x = 0
+        bilde.save()
+        self.assertNotEqual(bilde.bilde_stor.name, forste[0])
+        self.assertTrue(os.path.exists(bilde.bilde_stor.path))
+        for gammel in forste[:2]:
+            self.assertFalse(os.path.exists(os.path.join(self.media, gammel)))
 
     def test_gamle_filer_fjernes_nar_bildet_byttes(self):
         import os
 
         bilde = self.nytt_bilde()
-        gamle = [bilde.bilde.path, bilde.bilde_liten.path]
-        bilde.bilde = lag_bilde(1000, 500, "nytt.png")
+        gamle = [bilde.bilde.path, bilde.bilde_stor.path, bilde.bilde_liten.path]
+        bilde.bilde = lag_bilde(1600, 900, "nytt.png")
+        bilde.utsnitt_x = bilde.utsnitt_y = bilde.utsnitt_bredde = bilde.utsnitt_hoyde = None
         bilde.save()
         self.assertFalse(any(os.path.exists(f) for f in gamle))
-        self.assertTrue(os.path.exists(bilde.bilde.path))
-        self.assertEqual(bilde.bredde, 1000)
+        self.assertTrue(all(os.path.exists(f.path) for f in (bilde.bilde, bilde.bilde_stor, bilde.bilde_liten)))
+        self.assertEqual((bilde.bredde, bilde.hoyde), (1600, 900))
 
-    def test_lagring_uten_nytt_bilde_rorer_ikke_filene(self):
+    def test_alle_filene_slettes_med_bildet(self):
+        import os
+
         bilde = self.nytt_bilde()
-        navn = bilde.bilde.name
-        bilde.alt_tekst = "Ny tekst"
-        bilde.save()
-        self.assertEqual(Forsidebilde.objects.get().bilde.name, navn)
+        filer = [bilde.bilde.path, bilde.bilde_stor.path, bilde.bilde_liten.path]
+        bilde.delete()
+        self.assertFalse(any(os.path.exists(f) for f in filer))
+
+    def test_kommandoen_lager_manglende_utsnitt(self):
+        bilde = self.nytt_bilde()
+        Forsidebilde.objects.update(bilde_stor="", bilde_liten="", generert_fra="")
+        bilde.refresh_from_db()
+        self.assertEqual(bilde.vis_url, bilde.bilde.url)  # originalen brukes i mellomtiden
+
+        from django.core.management import call_command
+
+        call_command("lag_forsidebilder", stdout=StringIO())
+        bilde.refresh_from_db()
+        self.assertTrue(bilde.bilde_stor)
+        self.assertEqual(bilde.vis_url, bilde.bilde_stor.url)
+
+
+class UtsnittValideringTester(ForsidebildeOppsett):
+    def skjema(self, fil=None, instance=None, **utsnitt):
+        from .forms import ForsidebildeSkjema
+
+        data = {"alt_tekst": "Fjellet", "bildetekst": "", "rekkefolge": "0", "aktiv": "on"}
+        data |= {f"utsnitt_{navn}": str(verdi) for navn, verdi in utsnitt.items()}
+        filer = {"bilde": fil} if fil else {}
+        return ForsidebildeSkjema(data, filer, instance=instance)
+
+    def feil(self, skjema):
+        self.assertFalse(skjema.is_valid())
+        return " ".join(str(f) for f in skjema.errors.values())
+
+    def test_uten_utsnitt_brukes_midten(self):
+        skjema = self.skjema(lag_bilde(3000, 1500))
+        self.assertTrue(skjema.is_valid(), skjema.errors)
+        bilde = skjema.save()
+        self.assertEqual((bilde.utsnitt_y, bilde.utsnitt_hoyde), (0, 100))
+
+    def test_gyldig_utsnitt(self):
+        skjema = self.skjema(lag_bilde(3200, 1800), x=10, y=10, bredde=50, hoyde=50)
+        self.assertTrue(skjema.is_valid(), skjema.errors)
+
+    def test_for_lite_bilde(self):
+        self.assertIn("Bildet er for lite (800 × 450 piksler). Det må være minst 1200 × 675 piksler",
+                      self.feil(self.skjema(lag_bilde(800, 450))))
+
+    def test_ikke_et_bilde(self):
+        fil = SimpleUploadedFile("cv.pdf", b"%PDF-1.4 ikke et bilde", content_type="application/pdf")
+        self.assertIn("bilde", self.feil(self.skjema(fil)).lower())
+
+    def test_verdier_utenfor_0_til_100(self):
+        self.feil(self.skjema(lag_bilde(3200, 1800), x=-5, y=0, bredde=50, hoyde=50))
+        self.feil(self.skjema(lag_bilde(3200, 1800), x=0, y=0, bredde=150, hoyde=50))
+
+    def test_utsnitt_utenfor_bildet(self):
+        self.assertIn("utenfor bildet", self.feil(self.skjema(lag_bilde(3200, 1800), x=60, y=0, bredde=50, hoyde=50)))
+
+    def test_feil_format(self):
+        # 50 % × 80 % av et 16:9-bilde er ikke 16:9
+        self.assertIn("16:9", self.feil(self.skjema(lag_bilde(3200, 1800), x=0, y=0, bredde=50, hoyde=80)))
+
+    def test_litt_avrunding_er_greit(self):
+        skjema = self.skjema(lag_bilde(3200, 1800), x=10, y=10, bredde=50.3, hoyde=50)
+        self.assertTrue(skjema.is_valid(), skjema.errors)
+
+    def test_for_lite_utsnitt(self):
+        # 20 % av 3200 piksler = 640 piksler bredt
+        self.assertIn("Utsnittet er for lite", self.feil(self.skjema(lag_bilde(3200, 1800), x=0, y=0, bredde=20, hoyde=20)))
+
+    def test_nytt_bilde_uten_nytt_utsnitt_midtstilles(self):
+        bilde = self.nytt_bilde(bilde=lag_bilde(3200, 1800), utsnitt_x=0, utsnitt_y=0, utsnitt_bredde=50, utsnitt_hoyde=50)
+        # Samme utsnittsverdier sendes med (som uten JavaScript), men bildet er nytt og stående
+        skjema = self.skjema(lag_bilde(2000, 3000), instance=bilde, x=0, y=0, bredde=50, hoyde=50)
+        self.assertTrue(skjema.is_valid(), skjema.errors)
+        bilde = skjema.save()
+        self.assertEqual((bilde.utsnitt_x, bilde.utsnitt_bredde), (0, 100))
+
+    def test_utsnitt_endres_uten_nytt_bilde(self):
+        bilde = self.nytt_bilde(bilde=lag_bilde(3200, 1800))
+        skjema = self.skjema(instance=bilde, x=50, y=50, bredde=50, hoyde=50)
+        self.assertTrue(skjema.is_valid(), skjema.errors)
+        self.assertEqual(skjema.save().utsnitt_x, 50)
 
 
 class ForsidebildeVisningTester(ForsidebildeOppsett):
@@ -569,6 +703,30 @@ class ForsidebildeRedigeringTester(ForsidebildeOppsett):
         response = self.client.get(reverse("profil:forside"))
         self.assertContains(response, rediger)
         self.assertContains(response, ny)
+
+    def test_redigeringssiden_har_beskjaeringsverktoy(self):
+        bilde = self.nytt_bilde()
+        self.client.force_login(self.admin)
+        for url in (reverse("profil:rediger", args=["forsidebilde", bilde.pk]),
+                    reverse("admin:profil_forsidebilde_change", args=[bilde.pk])):
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertContains(response, 'class="utsnitt"')
+                self.assertContains(response, f'data-original="{bilde.bilde.url}"')
+                self.assertContains(response, 'data-forhold="16/9"')
+                self.assertContains(response, "profil/utsnitt.js")
+                self.assertContains(response, 'type="hidden" name="utsnitt_x"')
+                self.assertNotContains(response, "bilde-clear")  # bildet er påkrevd, kan ikke fjernes
+
+    def test_ansatt_endrer_utsnitt(self):
+        bilde = self.nytt_bilde(bilde=lag_bilde(3200, 1800))
+        self.client.force_login(self.admin)
+        data = {"alt_tekst": "Fjellet", "bildetekst": "", "rekkefolge": "0", "aktiv": "on",
+                "utsnitt_x": "50", "utsnitt_y": "25", "utsnitt_bredde": "50", "utsnitt_hoyde": "50"}
+        response = self.client.post(reverse("profil:rediger", args=["forsidebilde", bilde.pk]), data)
+        self.assertRedirects(response, reverse("profil:forside") + "#forsidebilde")
+        bilde.refresh_from_db()
+        self.assertEqual((bilde.utsnitt_x, bilde.bredde, bilde.hoyde), (50, 1600, 900))
 
     def test_legg_til_forsidebilde_uten_karusell(self):
         self.client.force_login(self.admin)

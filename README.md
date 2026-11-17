@@ -49,10 +49,11 @@ python manage.py axes_reset
 Øverst på forsiden kan det ligge en stor bildekarusell med navnet og tittelen din. Når man scroller, krymper den til et smalt banner med navnet og menyen. Uten bilder ser forsiden ut som vanlig.
 
 1. Logg inn og trykk **+ Legg til forsidebilde** (under navnet ditt på forsiden, eller oppe i karusellen når den finnes).
-2. Velg et bilde og skriv en **alternativ tekst** – en kort beskrivelse for dem som bruker skjermleser. Bildeteksten er valgfri og vises oppe til høyre på bildet.
-3. **Rekkefølge** bestemmer hvilket bilde som vises først (lavest tall først). Fjern krysset for **Aktiv** for å skjule et bilde uten å slette det.
+2. Velg et bilde. Det dukker opp med en ramme i 16:9 som viser hva som kommer med: dra rammen for å flytte den og hjørnene for å endre størrelsen (piltastene og + / − virker også). Under ser du hvordan den smale stripen øverst blir når man har scrollet, så du kan sjekke at f.eks. ansikter er med.
+3. Skriv en **alternativ tekst** – en kort beskrivelse for dem som bruker skjermleser. Bildeteksten er valgfri og vises oppe til høyre på bildet.
+4. **Rekkefølge** bestemmer hvilket bilde som vises først (lavest tall først). Fjern krysset for **Aktiv** for å skjule et bilde uten å slette det.
 
-Liggende bilder fungerer best, siden de beskjæres til bredden av skjermen. Store bilder skaleres automatisk ned til 2400 px bredde, og en 1200 px-utgave lages for mobil. Bildene bytter av seg selv hvert 6. sekund, og besøkende kan pause, sveipe eller bruke piltastene. Skjulte bilder finner du igjen under **Forsidebilder** i admin.
+Bildet må være minst 1200 × 675 piksler. Originalen lagres uendret, så du kan velge et nytt utsnitt senere med «Rediger bilde» uten å laste opp på nytt. Utsnittet lagres i 2400 og 1200 px bredde (WebP), og lages bare på nytt når bildet eller utsnittet endres. Formatet (16:9) står ett sted, `UTSNITT_FORHOLD` i `profil/models.py`. Bildene bytter av seg selv hvert 6. sekund, og besøkende kan pause, sveipe eller bruke piltastene. Skjulte bilder finner du igjen under **Forsidebilder** i admin.
 
 ## Publisering på PythonAnywhere
 
@@ -84,7 +85,8 @@ Etter å ha hentet nye endringer (f.eks. forsidebildene) kjører du dette i Bash
 cd ~/CV && source venv/bin/activate
 git pull
 python manage.py migrate          # nødvendig etter oppdateringer med nye modeller, som Forsidebilde
-python manage.py collectstatic
+python manage.py lag_forsidebilder   # lager utsnitt for forsidebilder som mangler det
+python manage.py collectstatic --noinput
 ```
 
 Bildene du laster opp havner i `~/CV/media/`. Sjekk at `/media/` er koblet til `~/CV/media` under **Static files** (punkt 6), ellers vises ikke forsidebildene og profilbildet når `DJANGO_DEBUG=False`.
