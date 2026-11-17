@@ -58,10 +58,24 @@
     --innhold-bredde: 45rem;       /* 720 px, ca. 70 tegn per linje */
     --kontroll-hoyde: 44px;        /* minste trykkflate (HIG) */
     --kontroll-hoyde-liten: 32px;
+    --knapp-hoyde: 40px;
+    --knapp-hoyde-liten: 28px;
+    --tekst-knapp: 1rem;           /* 16 px */
+    --tekst-knapp-liten: 0.875rem; /* 14 px */
     --toppfelt-hoyde: 52px;
+
+    /* Bildekarusellen på forsiden */
+    --hero-hoyde: max(64svh, 22.5rem);
+    --banner-hoyde: 56px;
+    --hero-sammenfall: calc(var(--hero-hoyde) - var(--banner-hoyde)); /* hvor langt den krymper */
+    --hero-kant: max(var(--avstand-4), calc((100% - var(--innhold-bredde)) / 2 + var(--avstand-4)));
+    --hero-slor: rgba(0, 0, 0, 0.55); /* minste mørklegging bak hvit tekst; gir AA også på helt hvite bilder */
 
     /* Bevegelse */
     --overgang: 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+    --overgang-vekst: 250ms cubic-bezier(0.2, 0.8, 0.2, 1); /* myk ut, ingen sprett */
+    --skala-over: 1.05;
+    --skala-trykk: 0.97;
 }
 
 /* Mørkt tema */
@@ -129,6 +143,11 @@ a {
 
 a:hover {
     text-decoration: underline;
+}
+
+/* hidden-attributtet skal alltid skjule, også når en klasse setter display */
+[hidden] {
+    display: none !important;
 }
 
 :focus-visible {
@@ -252,8 +271,16 @@ nav a[aria-current="page"] {
     font-weight: 600;
 }
 
+.nav-lenker {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--avstand-1);
+    white-space: nowrap;
+}
+
 /* «CV» til venstre fungerer som navnet på nettstedet */
-nav a:first-child {
+nav > a:first-child {
     margin-right: auto;
     color: var(--tekst);
     font-size: var(--tekst-overskrift);
@@ -340,6 +367,16 @@ footer form a {
     }
 }
 
+.intro-knapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--avstand-2);
+}
+
+main > .lytt:first-child {
+    margin-top: 0;
+}
+
 .lytt {
     margin-top: var(--avstand-6);
     padding: var(--avstand-4);
@@ -366,12 +403,6 @@ footer form a {
 }
 
 .lytt summary {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--avstand-1);
-    min-height: var(--kontroll-hoyde);
-    color: var(--aksent);
-    font-size: var(--tekst-under);
     list-style: none;
     cursor: pointer;
 }
@@ -506,7 +537,7 @@ main > h1 + .skjema {
     grid-column: 1 / -1;
     grid-row: 2;
     justify-self: start;
-    margin-top: var(--avstand-1);
+    margin-top: var(--avstand-2);
 }
 
 .punkt h3 {
@@ -521,7 +552,8 @@ main > h1 + .skjema {
 
     .punkt > details > summary > .ar {
         grid-row: 2;
-        margin-top: var(--avstand-1);
+        align-self: center;
+        margin-top: var(--avstand-2);
     }
 
     .punkt > details > summary > .vis-mer {
@@ -550,14 +582,23 @@ main > h1 + .skjema {
     text-align: right;
 }
 
-/* «Vis mer» med en pil som vrir seg når innholdet åpnes */
-.vis-mer {
+/* «Vis mer» (og «Les teksten») ser ut som en liten tonet knapp,
+   med en pil som vrir seg når innholdet åpnes */
+.vis-mer,
+.lytt summary {
     display: inline-flex;
     align-items: center;
     gap: var(--avstand-1);
+    min-height: var(--knapp-hoyde-liten);
+    padding: 0 var(--avstand-3);
+    border-radius: var(--runding-full);
+    background: var(--aksent-tone);
     color: var(--aksent);
-    font-size: var(--tekst-under);
-    line-height: 1.35;
+    font-size: var(--tekst-knapp-liten);
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: transform var(--overgang-vekst), filter var(--overgang), opacity var(--overgang);
 }
 
 .vis-mer::after {
@@ -586,9 +627,9 @@ details[open] > summary > .vis-mer::before,
     transform: rotate(90deg);
 }
 
-summary:hover .vis-mer,
-.lytt summary:hover {
-    text-decoration: underline;
+summary:active .vis-mer,
+.lytt summary:active {
+    opacity: 0.7;
 }
 
 /* Innholdet bak «Vis mer» */
@@ -733,25 +774,49 @@ li > span {
     align-items: center;
     justify-content: center;
     gap: var(--avstand-1);
-    min-height: var(--kontroll-hoyde);
-    padding: 0 var(--avstand-5);
+    min-height: var(--knapp-hoyde);
+    padding: 0 var(--avstand-4);
     border: 0;
     border-radius: var(--runding-full);
     background: var(--aksent-fyll);
     color: var(--pa-fyll);
     font: inherit;
-    font-size: var(--tekst-brod);
+    font-size: var(--tekst-knapp);
     font-weight: 600;
     line-height: 1.2;
     text-align: center;
     white-space: nowrap;
     cursor: pointer;
-    transition: filter var(--overgang), opacity var(--overgang), background-color var(--overgang);
+    transition: transform var(--overgang-vekst), filter var(--overgang), opacity var(--overgang),
+        background-color var(--overgang);
 }
 
 .knapp:hover {
     text-decoration: none;
     filter: brightness(1.08);
+}
+
+/* Knappene vokser litt når musepekeren er over dem, og trykkes inn ved klikk.
+   Bare på enheter med mus, og ikke når «Reduser bevegelse» er på. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .knapp:hover,
+    .knapper > a:not(.knapp):hover,
+    summary:hover > .vis-mer,
+    .lytt summary:hover {
+        transform: scale(var(--skala-over));
+    }
+
+    .knapp:active,
+    .knapper > a:not(.knapp):active,
+    summary:active > .vis-mer,
+    .lytt summary:active {
+        transform: scale(var(--skala-trykk));
+    }
+
+    summary:hover > .vis-mer,
+    .lytt summary:hover {
+        filter: brightness(1.08);
+    }
 }
 
 .knapp:active {
@@ -765,14 +830,31 @@ li > span {
 }
 
 .knapp.liten {
-    min-height: var(--kontroll-hoyde-liten);
-    padding: 0 var(--avstand-4);
-    font-size: var(--tekst-under);
+    min-height: var(--knapp-hoyde-liten);
+    padding: 0 var(--avstand-3);
+    font-size: var(--tekst-knapp-liten);
+}
+
+/* Usynlig utvidelse av trykkflaten, så små knapper fortsatt er
+   minst 44 px å treffe med fingeren uten å se større ut */
+.knapp,
+.knapper > a:not(.knapp),
+.lytt summary {
+    position: relative;
 }
 
 @media (pointer: coarse) {
-    .knapp.liten {
-        min-height: var(--kontroll-hoyde);
+    .knapp::before,
+    .knapper > a:not(.knapp)::before,
+    .lytt summary::before {
+        content: "";
+        position: absolute;
+        inset: calc((var(--kontroll-hoyde) - var(--knapp-hoyde)) / -2) 0;
+    }
+
+    .knapp.liten::before,
+    .lytt summary::before {
+        inset: calc((var(--kontroll-hoyde) - var(--knapp-hoyde-liten)) / -2) calc(var(--avstand-1) * -1);
     }
 }
 
@@ -797,11 +879,12 @@ li > span {
 .knapper > a:not(.knapp) {
     display: inline-flex;
     align-items: center;
-    min-height: var(--kontroll-hoyde);
+    min-height: var(--knapp-hoyde);
+    font-size: var(--tekst-knapp);
     padding: 0 var(--avstand-3);
     border-radius: var(--runding-full);
     font-weight: 600;
-    transition: background-color var(--overgang);
+    transition: transform var(--overgang-vekst), background-color var(--overgang), opacity var(--overgang);
 }
 
 .knapper > a:not(.knapp):hover {
@@ -812,7 +895,7 @@ li > span {
 .knapper > a.fare {
     margin-left: auto;
     background: var(--fare-tone);
-    padding: 0 var(--avstand-5);
+    padding: 0 var(--avstand-4);
 }
 
 .knapper > a.fare:hover {
@@ -933,8 +1016,11 @@ li > span {
     cursor: pointer;
 }
 
+/* Hjelpeteksten står mellom etiketten og boksen i HTML-en; vis den under raden */
 .skjema div:has(> input[type="checkbox"]) > .helptext {
     flex-basis: 100%;
+    order: 1;
+    margin: 0;
 }
 
 .skjema input[type="file"] {
@@ -945,10 +1031,10 @@ li > span {
 }
 
 .skjema input[type="file"]::file-selector-button {
-    min-height: var(--kontroll-hoyde-liten);
+    min-height: var(--knapp-hoyde-liten);
     margin-right: var(--avstand-3);
-    padding: 0 var(--avstand-4);
-    font-size: var(--tekst-under);
+    padding: 0 var(--avstand-3);
+    font-size: var(--tekst-knapp-liten);
 }
 
 .skjema .helptext,
@@ -1014,6 +1100,435 @@ li > span {
     border-radius: var(--runding);
     background: var(--fare-tone);
     font-size: var(--tekst-under);
+}
+
+/* =========================================================================
+   Bildekarusell på forsiden («hero»)
+
+   Hele effekten bygger på sticky-posisjonering, ikke på høydeanimasjon:
+   - .hero er sticky med negativ top, så den scroller opp til bare de nederste
+     --banner-hoyde pikslene er igjen, og blir liggende der.
+   - Menyen inni er sticky med top: 0, og blir dermed alltid liggende øverst i
+     vinduet – til slutt som selve banneret over en smal stripe av bildet.
+   Tonene, teksten og bildeforskyvningen på toppen er bare transform og opacity.
+   ========================================================================= */
+
+@media (min-width: 768px) {
+    :root {
+        --hero-hoyde: max(76svh, 26rem);
+        --banner-hoyde: 64px;
+    }
+}
+
+html:has(.hero) {
+    scroll-padding-top: calc(var(--banner-hoyde) + var(--avstand-4));
+}
+
+/* Usynlig målepinne for JavaScript: like høy som strekningen karusellen krymper over */
+.hero-vakt {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: var(--hero-sammenfall);
+    pointer-events: none;
+}
+
+.hero {
+    position: sticky;
+    top: calc(var(--hero-sammenfall) * -1);
+    z-index: 10;
+    height: var(--hero-hoyde);
+    overflow: clip;
+    border-bottom: 0;
+    background: #000;
+    color: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    isolation: isolate;
+    touch-action: pan-y; /* vannrette sveip går til karusellen, loddrette scroller siden */
+}
+
+.hero :focus-visible {
+    outline-color: #fff;
+}
+
+/* Menyen: hvit tekst på et mørkt slør som alltid gir nok kontrast */
+.hero nav {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    max-width: none;
+    min-height: var(--banner-hoyde);
+    margin: 0;
+    padding-inline: max(var(--avstand-2), calc((100% - var(--innhold-bredde)) / 2 + var(--avstand-2)));
+    background: var(--hero-slor);
+}
+
+/* Myk overgang fra menyen ned i bildet */
+.hero nav::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    height: var(--avstand-7);
+    background: linear-gradient(var(--hero-slor), transparent);
+    pointer-events: none;
+}
+
+.hero nav a,
+.hero nav a:hover {
+    color: #fff;
+}
+
+.hero nav a:hover {
+    text-decoration: underline;
+}
+
+.hero nav a[aria-current="page"] {
+    font-weight: 600;
+}
+
+.hero nav .nav-lenker a[aria-current="page"] {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+}
+
+/* «CV» og navnet ligger oppå hverandre; navnet tones inn når banneret er krympet */
+.hero nav > a:first-child {
+    display: inline-grid;
+    grid-template-columns: minmax(0, max-content);
+    justify-items: start;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.hero nav > a:first-child > span {
+    grid-area: 1 / 1;
+    max-width: 100%;
+}
+
+.banner-navn {
+    overflow: hidden;
+    font-size: var(--tekst-under);
+    font-weight: 600;
+    letter-spacing: 0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    opacity: 0;
+}
+
+/* Bildene */
+.hero-bilder {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    transform-origin: center top;
+}
+
+.hero-bilder:focus-visible {
+    outline-offset: -4px;
+}
+
+.hero-bilde {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+}
+
+.hero-bilde.aktiv {
+    opacity: 1;
+}
+
+.hero-bilde img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hero-bilde figcaption {
+    position: absolute;
+    top: calc(var(--banner-hoyde) + var(--avstand-3));
+    right: var(--hero-kant);
+    max-width: min(60%, 24rem);
+    padding: var(--avstand-1) var(--avstand-3);
+    border-radius: var(--runding-full);
+    background: var(--hero-slor);
+    color: #fff;
+    font-size: var(--tekst-fotnote);
+}
+
+/* Mørk toning nederst, så navnet alltid kan leses (minst 0,6 svart bak teksten) */
+.hero-toning {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0, rgba(0, 0, 0, 0.6) 15rem, transparent 30rem);
+    pointer-events: none;
+}
+
+/* Navn, tittel og knapper */
+.hero-innhold {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--avstand-4);
+    padding: 0 var(--hero-kant) var(--avstand-5);
+    transform-origin: left bottom;
+}
+
+@media (min-width: 768px) {
+    .hero-innhold {
+        padding-bottom: var(--avstand-7);
+    }
+}
+
+.hero-tekst {
+    flex: 1 1 20rem;
+    min-width: 0;
+}
+
+.hero-portrett {
+    display: block;
+    width: 72px;
+    height: 72px;
+    margin-bottom: var(--avstand-4);
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.hero h1 {
+    margin: 0 0 var(--avstand-1);
+    color: #fff;
+    font-size: clamp(2rem, 1.4rem + 2.6vw, 3rem);
+}
+
+.hero-tekst p {
+    margin: 0;
+    color: #fff;
+    font-size: var(--tekst-brod);
+}
+
+.hero-redigering {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--avstand-2);
+    margin-top: var(--avstand-4);
+}
+
+/* Lyse knapper med mørk tekst: lesbare uansett hva som er på bildet bak */
+.hero .knapp.sekundar {
+    background: rgba(255, 255, 255, 0.92);
+    color: #1d1d1f;
+}
+
+/* Prikker og pause-knapp */
+.hero-kontroller {
+    display: flex;
+    align-items: center;
+    gap: var(--avstand-2);
+}
+
+.hero-prikker {
+    display: flex;
+    align-items: center;
+}
+
+.hero-prikk,
+.hero-pause {
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #fff;
+    cursor: pointer;
+}
+
+.hero-prikk {
+    width: 24px;
+    height: 32px;
+}
+
+.hero-prikk::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: var(--runding-full);
+    background: rgba(255, 255, 255, 0.55);
+    transition: width var(--overgang), background-color var(--overgang);
+}
+
+.hero-prikk:hover::before {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.hero-prikk[aria-current="true"]::before {
+    width: 20px;
+    background: #fff;
+}
+
+.hero-pause {
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--runding-full);
+    background: rgba(0, 0, 0, 0.45);
+    transition: transform var(--overgang-vekst), background-color var(--overgang);
+}
+
+.hero-pause:hover {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.hero-pause::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    background: currentColor;
+    /* Spill av: trekant */
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 1.5v9l7.5-4.5z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 1.5v9l7.5-4.5z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.hero-pause[data-spiller="true"]::before {
+    /* Pause: to streker */
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 1.5h2.5v9H2.5zM7 1.5h2.5v9H7z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 1.5h2.5v9H2.5zM7 1.5h2.5v9H7z'/%3E%3C/svg%3E");
+}
+
+@media (pointer: coarse) {
+    .hero-prikk {
+        width: 32px;
+        height: var(--kontroll-hoyde);
+    }
+
+    .hero-pause {
+        width: var(--kontroll-hoyde);
+        height: var(--kontroll-hoyde);
+    }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .hero-pause:hover {
+        transform: scale(var(--skala-over));
+    }
+
+    .hero-pause:active {
+        transform: scale(var(--skala-trykk));
+    }
+}
+
+/* Når karusellen er (nesten) krympet: tekst og knapper skal ikke kunne klikkes */
+.hero.halvveis .hero-innhold {
+    visibility: hidden;
+}
+
+/* Sluttilstanden, brukt direkte ved redusert bevegelse */
+.hero.samlet .nav-cv {
+    opacity: 0;
+}
+
+.hero.samlet .banner-navn {
+    opacity: 1;
+}
+
+.hero.samlet .hero-toning {
+    opacity: 0;
+}
+
+/* --- Scroll-effekten, med CSS scroll-drevne animasjoner (Chrome, Edge, Safari 26+) --- */
+
+@keyframes hero-bilder-glir {
+    from { transform: scale(1.06); }
+    to { transform: translateY(calc(var(--hero-sammenfall) / 2)) scale(1); }
+}
+
+@keyframes hero-innhold-forsvinner {
+    0% { opacity: 1; transform: none; }
+    45%, 100% { opacity: 0; transform: translateY(calc(var(--avstand-5) * -1)) scale(0.94); }
+}
+
+@keyframes hero-toning-forsvinner {
+    0%, 40% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes tones-ut-sist {
+    0%, 75% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes tones-inn-sist {
+    0%, 75% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+        .hero-bilder,
+        .hero-innhold,
+        .hero-toning,
+        .hero nav::after,
+        .hero .nav-cv,
+        .hero .banner-navn {
+            animation-duration: auto;
+            animation-timing-function: linear;
+            animation-fill-mode: both;
+            animation-timeline: scroll(root block);
+            animation-range: 0 var(--hero-sammenfall);
+        }
+
+        .hero-bilder { animation-name: hero-bilder-glir; }
+        .hero-innhold { animation-name: hero-innhold-forsvinner; }
+        .hero-toning { animation-name: hero-toning-forsvinner; }
+        .hero nav::after,
+        .hero .nav-cv { animation-name: tones-ut-sist; }
+        .hero .banner-navn { animation-name: tones-inn-sist; }
+    }
+}
+
+/* --- Reserveløsning: forside.js setter --fremdrift (0–1) mens man scroller --- */
+
+.hero.js-fremdrift {
+    --fremdrift: 0;
+}
+
+.hero.js-fremdrift .hero-bilder {
+    transform:
+        translateY(calc(var(--hero-sammenfall) / 2 * var(--fremdrift)))
+        scale(calc(1.06 - 0.06 * var(--fremdrift)));
+}
+
+.hero.js-fremdrift .hero-innhold {
+    --del: min(1, calc(var(--fremdrift) / 0.45));
+    opacity: calc(1 - var(--del));
+    transform: translateY(calc(var(--avstand-5) * -1 * var(--del))) scale(calc(1 - 0.06 * var(--del)));
+}
+
+.hero.js-fremdrift .hero-toning {
+    opacity: clamp(0, calc((1 - var(--fremdrift)) / 0.6), 1);
+}
+
+.hero.js-fremdrift nav::after,
+.hero.js-fremdrift .nav-cv {
+    opacity: clamp(0, calc((1 - var(--fremdrift)) / 0.25), 1);
+}
+
+.hero.js-fremdrift .banner-navn {
+    opacity: clamp(0, calc((var(--fremdrift) - 0.75) / 0.25), 1);
 }
 
 /* =========================================================================

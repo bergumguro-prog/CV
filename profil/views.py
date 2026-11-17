@@ -4,12 +4,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from .forms import TYPER
-from .models import Erfaring, Ferdighet, Idrettshendelse, Idrettslag, Profil, Prosjekt, Utdanning, Verv
+from .models import Erfaring, Ferdighet, Forsidebilde, Idrettshendelse, Idrettslag, Profil, Prosjekt, Utdanning, Verv
 
 
 def forside(request):
     return render(request, "profil/forside.html", {
         "profil": Profil.objects.first(),
+        "forsidebilder": list(Forsidebilde.objects.filter(aktiv=True)),
         "erfaringer": Erfaring.objects.prefetch_related("egenskaper__egenskap"),
         "verv": Verv.objects.prefetch_related("egenskaper__egenskap"),
         "utdanninger": Utdanning.objects.prefetch_related("fag", "egenskaper__egenskap"),

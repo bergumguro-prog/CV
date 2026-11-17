@@ -1,15 +1,27 @@
 {% extends "profil/base.html" %}
+{% load static %}
+
+{% block skript %}{% if forsidebilder %}<script src="{% static 'profil/forside.js' %}" defer></script>{% endif %}{% endblock %}
+
+{% block topp %}{% if forsidebilder %}{% include "profil/_hero.html" %}{% else %}{{ block.super }}{% endif %}{% endblock %}
 
 {% block content %}
     {% if profil %}
+        {% if not forsidebilder %}
         <div class="intro">
             {% if profil.bilde %}<img src="{{ profil.bilde.url }}" alt="{{ profil.navn }}">{% endif %}
             <div>
                 <h1>{{ profil.navn }}</h1>
                 {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
-                {% if user.is_staff %}<a class="knapp sekundar liten" href="{% url 'profil:rediger' 'profil' profil.pk %}">Rediger profil</a>{% endif %}
+                {% if user.is_staff %}
+                    <p class="intro-knapper">
+                        <a class="knapp sekundar liten" href="{% url 'profil:rediger' 'profil' profil.pk %}">Rediger profil</a>
+                        <a class="knapp sekundar liten" href="{% url 'profil:ny' 'forsidebilde' %}">+ Legg til forsidebilde</a>
+                    </p>
+                {% endif %}
             </div>
         </div>
+        {% endif %}
 
         {% if profil.lyd %}
             <section class="lytt">

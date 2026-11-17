@@ -1,0 +1,10 @@
+{% with side=request.resolver_match.url_name %}
+<nav>
+    <a href="{% url 'profil:forside' %}"{% if side == "forside" %} aria-current="page"{% endif %}>{% if banner_navn %}<span class="nav-cv">CV</span><span class="banner-navn" aria-hidden="true">{{ banner_navn }}</span>{% else %}CV{% endif %}</a>
+    <div class="nav-lenker">
+        <a href="{% url 'profil:om_meg' %}"{% if side == "om_meg" %} aria-current="page"{% endif %}>Om meg</a>
+        <a href="{% url 'profil:prosjekter' %}"{% if side == "prosjekter" %} aria-current="page"{% endif %}>Prosjekter</a>
+        <a href="{% url 'profil:kontakt' %}"{% if side == "kontakt" %} aria-current="page"{% endif %}>Kontakt</a>
+    </div>
+</nav>
+{% endwith %}

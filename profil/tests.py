@@ -13,6 +13,7 @@ from .models import (
     ErfaringEgenskap,
     Fag,
     Ferdighet,
+    Forsidebilde,
     Idrettshendelse,
     Idrettslag,
     Profil,
@@ -367,3 +368,209 @@ class TittelOgSokbarhetTester(TestCase):
         with override_settings(SOKBAR=True):
             response = self.client.get(reverse("profil:forside"))
         self.assertNotContains(response, 'name="robots"')
+
+
+def lag_bilde(bredde, hoyde, navn="bilde.png", format="PNG", **lagre):
+    from PIL import Image
+
+    fil = BytesIO()
+    Image.new("RGB", (bredde, hoyde), (200, 120, 60)).save(fil, format, **lagre)
+    return SimpleUploadedFile(navn, fil.getvalue(), content_type=f"image/{format.lower()}")
+
+
+class ForsidebildeOppsett(TestCase):
+    """Felles oppsett: opplastede filer havner i en midlertidig mappe."""
+
+    def setUp(self):
+        self.media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.media)
+        innstillinger = override_settings(MEDIA_ROOT=self.media)
+        innstillinger.enable()
+        self.addCleanup(innstillinger.disable)
+
+    def nytt_bilde(self, **felt):
+        felt.setdefault("bilde", lag_bilde(3000, 1500))
+        felt.setdefault("alt_tekst", "Utsikt over fjellet")
+        return Forsidebilde.objects.create(**felt)
+
+
+class ForsidebildeModellTester(ForsidebildeOppsett):
+    def test_str_og_rekkefolge(self):
+        andre = self.nytt_bilde(alt_tekst="Andre", rekkefolge=2)
+        forste = self.nytt_bilde(alt_tekst="Første", rekkefolge=1)
+        self.assertEqual(str(forste), "Første")
+        self.assertEqual(list(Forsidebilde.objects.all()), [forste, andre])
+
+    def test_store_bilder_skaleres_ned_i_to_storrelser(self):
+        from PIL import Image
+
+        bilde = self.nytt_bilde()
+        self.assertEqual((bilde.bredde, bilde.hoyde), (2400, 1200))
+        with Image.open(bilde.bilde.path) as stor, Image.open(bilde.bilde_liten.path) as liten:
+            self.assertEqual((stor.format, stor.size), ("JPEG", (2400, 1200)))
+            self.assertEqual((liten.format, liten.size), ("JPEG", (1200, 600)))
+        self.assertEqual(bilde.srcset, f"{bilde.bilde_liten.url} 1200w, {bilde.bilde.url} 2400w")
+
+    def test_sma_bilder_blir_ikke_forstorret(self):
+        bilde = self.nytt_bilde(bilde=lag_bilde(800, 600))
+        self.assertEqual((bilde.bredde, bilde.hoyde), (800, 600))
+        self.assertEqual(bilde.srcset, f"{bilde.bilde.url} 800w")
+
+    def test_mobilbilder_snus_riktig_vei(self):
+        from PIL import Image
+
+        exif = Image.Exif()
+        exif[0x0112] = 6  # «roter 90°», slik mange mobilkameraer lagrer bilder
+        bilde = self.nytt_bilde(bilde=lag_bilde(300, 200, "mobil.jpg", "JPEG", exif=exif))
+        self.assertEqual((bilde.bredde, bilde.hoyde), (200, 300))
+
+    def test_filene_slettes_med_bildet(self):
+        import os
+
+        bilde = self.nytt_bilde()
+        filer = [bilde.bilde.path, bilde.bilde_liten.path]
+        bilde.delete()
+        self.assertFalse(any(os.path.exists(f) for f in filer))
+
+    def test_gamle_filer_fjernes_nar_bildet_byttes(self):
+        import os
+
+        bilde = self.nytt_bilde()
+        gamle = [bilde.bilde.path, bilde.bilde_liten.path]
+        bilde.bilde = lag_bilde(1000, 500, "nytt.png")
+        bilde.save()
+        self.assertFalse(any(os.path.exists(f) for f in gamle))
+        self.assertTrue(os.path.exists(bilde.bilde.path))
+        self.assertEqual(bilde.bredde, 1000)
+
+    def test_lagring_uten_nytt_bilde_rorer_ikke_filene(self):
+        bilde = self.nytt_bilde()
+        navn = bilde.bilde.name
+        bilde.alt_tekst = "Ny tekst"
+        bilde.save()
+        self.assertEqual(Forsidebilde.objects.get().bilde.name, navn)
+
+
+class ForsidebildeVisningTester(ForsidebildeOppsett):
+    def setUp(self):
+        super().setUp()
+        Profil.objects.create(navn="Ola Nordmann", tittel="Utvikler")
+
+    def test_uten_bilder_er_forsiden_som_for(self):
+        response = self.client.get(reverse("profil:forside"))
+        self.assertNotContains(response, 'class="hero"')
+        self.assertNotContains(response, "forside.js")
+        self.assertContains(response, '<div class="intro">')
+        self.assertContains(response, "<h1>Ola Nordmann</h1>", html=True)
+
+    def test_med_bilder_vises_karusellen(self):
+        self.nytt_bilde(alt_tekst="Første bilde", bildetekst="Jotunheimen", rekkefolge=1)
+        self.nytt_bilde(alt_tekst="Andre bilde", rekkefolge=2)
+        self.nytt_bilde(alt_tekst="Skjult bilde", aktiv=False)
+        response = self.client.get(reverse("profil:forside"))
+        tekst = response.content.decode()
+
+        self.assertContains(response, 'class="hero"')
+        self.assertContains(response, 'src="/static/profil/forside.js" defer')
+        self.assertContains(response, "<h1>Ola Nordmann</h1>", count=1, html=True)
+        self.assertNotContains(response, '<div class="intro">')
+        self.assertContains(response, "Jotunheimen")
+        self.assertNotContains(response, "Skjult bilde")
+        self.assertContains(response, 'sizes="100vw"', count=2)
+        # Første bilde lastes med en gang, resten senere
+        self.assertLess(tekst.index("Første bilde"), tekst.index("Andre bilde"))
+        self.assertIn('alt="Første bilde" decoding="async" fetchpriority="high"', tekst)
+        self.assertIn('alt="Andre bilde" decoding="async" loading="lazy"', tekst)
+        # Prikker og pause-knapp når det er mer enn ett bilde
+        self.assertContains(response, 'class="hero-prikk"', count=2)
+        self.assertContains(response, 'class="hero-pause"')
+
+    def test_ett_bilde_har_ingen_prikker(self):
+        self.nytt_bilde()
+        response = self.client.get(reverse("profil:forside"))
+        self.assertNotContains(response, "hero-kontroller")
+
+    def test_antall_sporringer_avhenger_ikke_av_antall_bilder(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        self.nytt_bilde()
+        with CaptureQueriesContext(connection) as ett_bilde:
+            self.client.get(reverse("profil:forside"))
+        self.nytt_bilde()
+        self.nytt_bilde()
+        with CaptureQueriesContext(connection) as tre_bilder:
+            self.client.get(reverse("profil:forside"))
+        self.assertEqual(len(ett_bilde), len(tre_bilder))
+
+
+class ForsidebildeRedigeringTester(ForsidebildeOppsett):
+    def setUp(self):
+        super().setUp()
+        from django.contrib.auth.models import User
+
+        self.admin = User.objects.create_superuser("guro", "guro@example.com", "passord")
+        self.vanlig = User.objects.create_user("besokende", "b@example.com", "passord")
+        self.profil = Profil.objects.create(navn="Ola Nordmann")
+
+    def data(self, **felt):
+        return {"bilde": lag_bilde(1600, 900), "alt_tekst": "Fjellet", "bildetekst": "", "rekkefolge": "0",
+                "aktiv": "on"} | felt
+
+    def test_bare_ansatte_kan_legge_til_og_redigere(self):
+        bilde = self.nytt_bilde()
+        sider = [reverse("profil:ny", args=["forsidebilde"]),
+                 reverse("profil:rediger", args=["forsidebilde", bilde.pk]),
+                 reverse("profil:slett", args=["forsidebilde", bilde.pk])]
+        for bruker in (None, self.vanlig):
+            if bruker:
+                self.client.force_login(bruker)
+            for url in sider:
+                with self.subTest(bruker=bruker, url=url):
+                    response = self.client.get(url)
+                    self.assertRedirects(response, reverse("profil:logg_inn") + f"?next={url}")
+            self.client.post(sider[0], self.data(alt_tekst="Inntrenger"))
+            self.client.post(sider[2])
+        self.assertEqual(list(Forsidebilde.objects.values_list("alt_tekst", flat=True)), ["Utsikt over fjellet"])
+
+    def test_ansatt_legger_til_bilde(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("profil:ny", args=["forsidebilde"]), self.data())
+        self.assertRedirects(response, reverse("profil:forside") + "#forsidebilde")
+        bilde = Forsidebilde.objects.get()
+        self.assertEqual((bilde.alt_tekst, bilde.bredde, bilde.aktiv), ("Fjellet", 1600, True))
+
+    def test_alt_tekst_er_pakrevd(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("profil:ny", args=["forsidebilde"]), self.data(alt_tekst=""))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Forsidebilde.objects.exists())
+
+    def test_ansatt_sletter_bilde(self):
+        bilde = self.nytt_bilde()
+        self.client.force_login(self.admin)
+        self.client.post(reverse("profil:slett", args=["forsidebilde", bilde.pk]))
+        self.assertFalse(Forsidebilde.objects.exists())
+
+    def test_redigeringsknapper_bare_for_ansatte(self):
+        bilde = self.nytt_bilde()
+        rediger = reverse("profil:rediger", args=["forsidebilde", bilde.pk])
+        ny = reverse("profil:ny", args=["forsidebilde"])
+
+        for bruker in (None, self.vanlig):
+            if bruker:
+                self.client.force_login(bruker)
+            response = self.client.get(reverse("profil:forside"))
+            self.assertNotContains(response, rediger)
+            self.assertNotContains(response, ny)
+            self.assertNotContains(response, "hero-redigering")
+
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, rediger)
+        self.assertContains(response, ny)
+
+    def test_legg_til_forsidebilde_uten_karusell(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, reverse("profil:ny", args=["forsidebilde"]))
