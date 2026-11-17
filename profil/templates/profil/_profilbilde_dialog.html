@@ -1,0 +1,6 @@
+{# Forstørret profilbilde. Åpnes av knappen rundt profilbildet (se forside.js). #}
+<dialog class="profilbilde-dialog" aria-label="Profilbilde av {{ profil.navn }}">
+    {# src settes først når dialogen åpnes, så det store bildet ikke lastes unødvendig #}
+    <img class="profilbilde-stor" data-src="{{ profil.stort_bilde_url }}" alt="{{ profil.navn }}">
+    <button type="button" class="profilbilde-lukk" aria-label="Lukk"><span aria-hidden="true">×</span></button>
+</dialog>

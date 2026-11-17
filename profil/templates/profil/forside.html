@@ -1,7 +1,7 @@
 {% extends "profil/base.html" %}
 {% load static %}
 
-{% block skript %}{% if forsidebilder %}<script src="{% static 'profil/forside.js' %}" defer></script>{% endif %}{% endblock %}
+{% block skript %}{% if forsidebilder or profil.bilde %}<script src="{% static 'profil/forside.js' %}" defer></script>{% endif %}{% endblock %}
 
 {% block topp %}{% if forsidebilder %}{% include "profil/_hero.html" %}{% else %}{{ block.super }}{% endif %}{% endblock %}
 
@@ -9,7 +9,7 @@
     {% if profil %}
         {% if not forsidebilder %}
         <div class="intro">
-            {% if profil.bilde %}<img src="{{ profil.bilde.url }}" alt="{{ profil.navn }}">{% endif %}
+            {% if profil.bilde %}<button type="button" class="profilbilde-knapp" aria-label="Vis større bilde av {{ profil.navn }}" aria-haspopup="dialog"><img src="{{ profil.bilde.url }}" alt="{{ profil.navn }}"></button>{% endif %}
             <div>
                 <h1>{{ profil.navn }}</h1>
                 {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
@@ -120,4 +120,6 @@
             </ul>
         </section>
     {% endif %}
+
+    {% if profil.bilde %}{% include "profil/_profilbilde_dialog.html" %}{% endif %}
 {% endblock %}

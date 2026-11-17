@@ -55,6 +55,8 @@ python manage.py axes_reset
 
 Bildet må være minst 1200 × 675 piksler. Originalen lagres uendret, så du kan velge et nytt utsnitt senere med «Rediger bilde» uten å laste opp på nytt. Utsnittet lagres i 2400 og 1200 px bredde (WebP), og lages bare på nytt når bildet eller utsnittet endres. Formatet (16:9) står ett sted, `UTSNITT_FORHOLD` i `profil/models.py`. Bildene bytter av seg selv hvert 6. sekund, og besøkende kan pause, sveipe eller bruke piltastene. Skjulte bilder finner du igjen under **Forsidebilder** i admin.
 
+Profilbildet på forsiden kan klikkes for å se det større. En skarp utgave på 1200 px lages automatisk når profilbildet lagres.
+
 ## Publisering på PythonAnywhere
 
 1. Lag en gratis konto på [pythonanywhere.com](https://www.pythonanywhere.com) og åpne en **Bash console**.
@@ -85,7 +87,7 @@ Etter å ha hentet nye endringer (f.eks. forsidebildene) kjører du dette i Bash
 cd ~/CV && source venv/bin/activate
 git pull
 python manage.py migrate          # nødvendig etter oppdateringer med nye modeller, som Forsidebilde
-python manage.py lag_forsidebilder   # lager utsnitt for forsidebilder som mangler det
+python manage.py lag_forsidebilder   # lager utsnitt for forsidebildene og stor utgave av profilbildet der det mangler
 python manage.py collectstatic --noinput
 ```
 

@@ -1335,11 +1335,14 @@ html:has(.hero) {
     min-width: 0;
 }
 
+.hero-tekst > .profilbilde-knapp {
+    margin-bottom: var(--avstand-4);
+}
+
 .hero-portrett {
     display: block;
     width: 72px;
     height: 72px;
-    margin-bottom: var(--avstand-4);
     border-radius: 50%;
     object-fit: cover;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
@@ -1565,6 +1568,187 @@ html:has(.hero) {
 
 .hero.js-fremdrift .banner-navn {
     opacity: clamp(0, calc((var(--fremdrift) - 0.75) / 0.25), 1);
+}
+
+/* =========================================================================
+   Forstørret profilbilde
+   Knappen rundt profilbildet åpner en <dialog> (se forside.js). Bildet glir fra
+   sin plass til midten med View Transitions der det støttes.
+   ========================================================================= */
+
+/* Knappen ser ut som selve bildet, men vokser litt ved hover så det er tydelig at den kan klikkes */
+.profilbilde-knapp {
+    display: block;
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    line-height: 0;
+    cursor: zoom-in;
+    transition: transform var(--overgang-vekst), filter var(--overgang);
+}
+
+.profilbilde-knapp:focus-visible {
+    outline-offset: 4px;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .profilbilde-knapp:hover {
+        transform: scale(var(--skala-over));
+        filter: brightness(1.05);
+    }
+
+    .profilbilde-knapp:active {
+        transform: scale(var(--skala-trykk));
+    }
+}
+
+.profilbilde-dialog {
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+}
+
+/* Hele siden bak, også karusellen, dempes og gjøres litt uskarp */
+.profilbilde-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+/* Hele bildet vises, ikke beskåret som det lille: et mykt avrundet rektangel */
+.profilbilde-stor {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: min(calc(100vw - 2 * var(--avstand-4)), 40rem);
+    max-height: min(80svh, 80vmax);
+    border-radius: var(--runding-stor);
+    box-shadow: 0 var(--avstand-5) var(--avstand-8) rgba(0, 0, 0, 0.45);
+    cursor: default;
+}
+
+.profilbilde-lukk {
+    position: absolute;
+    top: var(--avstand-3);
+    right: var(--avstand-3);
+    display: grid;
+    place-items: center;
+    width: var(--kontroll-hoyde);
+    height: var(--kontroll-hoyde);
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--runding-full);
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform var(--overgang-vekst), background-color var(--overgang);
+}
+
+.profilbilde-lukk:hover {
+    background: rgba(0, 0, 0, 0.75);
+}
+
+.profilbilde-lukk:focus-visible {
+    outline-color: #fff;
+}
+
+/* Siden bak scroller ikke mens bildet er åpent (plassen til rullefeltet beholdes) */
+html:has(.profilbilde-dialog[open]) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
+/* Glidningen (View Transitions): det lille og det store bildet fyller boksen mens den
+   flytter seg, så innholdet ikke hopper når formen går fra sirkel til rektangel */
+::view-transition-group(profilbilde) {
+    animation-duration: 400ms;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+::view-transition-old(profilbilde),
+::view-transition-new(profilbilde) {
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Det gamle bildet (f.eks. den lille sirkelen) forsvinner raskt, så man ikke ser en stor,
+   blek sirkel midt i bevegelsen. Selve flyttingen varer fortsatt 400 ms. */
+@keyframes vt-ut {
+    to { opacity: 0; }
+}
+
+@keyframes vt-inn {
+    from { opacity: 0; }
+}
+
+::view-transition-old(profilbilde) {
+    animation: vt-ut 140ms ease-out both;
+}
+
+::view-transition-new(profilbilde) {
+    animation: vt-inn 140ms ease-in both;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 300ms;
+}
+
+/* Reserve uten View Transitions: tones inn og skaleres litt. Lukke-reglene har
+   [open][data-overgang] med, så de vinner over åpne-reglene. */
+@keyframes profilbilde-inn {
+    from { opacity: 0; transform: scale(0.92); }
+}
+
+@keyframes profilbilde-ut {
+    to { opacity: 0; transform: scale(0.92); }
+}
+
+@keyframes toning-inn {
+    from { opacity: 0; }
+}
+
+@keyframes toning-ut {
+    to { opacity: 0; }
+}
+
+.profilbilde-dialog[open][data-overgang="ton"] {
+    animation: profilbilde-inn 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.profilbilde-dialog[open][data-overgang="ton"]::backdrop {
+    animation: toning-inn 250ms ease;
+}
+
+.profilbilde-dialog[open][data-overgang].lukkes {
+    animation: profilbilde-ut 200ms ease forwards;
+}
+
+.profilbilde-dialog[open][data-overgang].lukkes::backdrop {
+    animation: toning-ut 200ms ease forwards;
+}
+
+/* Redusert bevegelse: bare en rask toning, ingen skalering. !important og høyere
+   presisjon enn den generelle regelen nederst, som ellers ville gjort toningen øyeblikkelig. */
+@media (prefers-reduced-motion: reduce) {
+    .profilbilde-dialog[open][data-overgang="ton"],
+    .profilbilde-dialog[open][data-overgang="ton"]::backdrop {
+        animation-name: toning-inn;
+        animation-duration: 150ms !important;
+    }
+
+    .profilbilde-dialog[open][data-overgang].lukkes,
+    .profilbilde-dialog[open][data-overgang].lukkes::backdrop {
+        animation-name: toning-ut;
+        animation-duration: 150ms !important;
+    }
 }
 
 /* =========================================================================
