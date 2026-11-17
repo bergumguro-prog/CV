@@ -58,6 +58,10 @@
     --innhold-bredde: 45rem;       /* 720 px, ca. 70 tegn per linje */
     --kontroll-hoyde: 44px;        /* minste trykkflate (HIG) */
     --kontroll-hoyde-liten: 32px;
+    --knapp-hoyde: 40px;
+    --knapp-hoyde-liten: 28px;
+    --tekst-knapp: 1rem;           /* 16 px */
+    --tekst-knapp-liten: 0.875rem; /* 14 px */
     --toppfelt-hoyde: 52px;
 
     /* Bevegelse */
@@ -69,6 +73,9 @@
     :root {
         --bakgrunn: #000000;
         --flate: #1c1c1e;
+    --overgang-vekst: 250ms cubic-bezier(0.2, 0.8, 0.2, 1); /* myk ut, ingen sprett */
+    --skala-over: 1.05;
+    --skala-trykk: 0.97;
         --flate-trykk: #2c2c2e;
         --fyll: rgba(118, 118, 128, 0.24);
         --tekst: #f5f5f7;
@@ -366,12 +373,6 @@ footer form a {
 }
 
 .lytt summary {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--avstand-1);
-    min-height: var(--kontroll-hoyde);
-    color: var(--aksent);
-    font-size: var(--tekst-under);
     list-style: none;
     cursor: pointer;
 }
@@ -506,7 +507,7 @@ main > h1 + .skjema {
     grid-column: 1 / -1;
     grid-row: 2;
     justify-self: start;
-    margin-top: var(--avstand-1);
+    margin-top: var(--avstand-2);
 }
 
 .punkt h3 {
@@ -521,7 +522,8 @@ main > h1 + .skjema {
 
     .punkt > details > summary > .ar {
         grid-row: 2;
-        margin-top: var(--avstand-1);
+        align-self: center;
+        margin-top: var(--avstand-2);
     }
 
     .punkt > details > summary > .vis-mer {
@@ -550,14 +552,19 @@ main > h1 + .skjema {
     text-align: right;
 }
 
-/* «Vis mer» med en pil som vrir seg når innholdet åpnes */
-.vis-mer {
+/* «Vis mer» (og «Les teksten») ser ut som en liten tonet knapp,
+   med en pil som vrir seg når innholdet åpnes */
+.vis-mer,
+.lytt summary {
     display: inline-flex;
     align-items: center;
     gap: var(--avstand-1);
     color: var(--aksent);
-    font-size: var(--tekst-under);
-    line-height: 1.35;
+    font-size: var(--tekst-knapp-liten);
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: transform var(--overgang-vekst), filter var(--overgang), opacity var(--overgang);
 }
 
 .vis-mer::after {
@@ -585,10 +592,14 @@ details[open] > summary > .vis-mer::before,
 .lytt details[open] > summary::after {
     transform: rotate(90deg);
 }
+    min-height: var(--knapp-hoyde-liten);
+    padding: 0 var(--avstand-3);
+    border-radius: var(--runding-full);
+    background: var(--aksent-tone);
 
-summary:hover .vis-mer,
-.lytt summary:hover {
-    text-decoration: underline;
+summary:active .vis-mer,
+.lytt summary:active {
+    opacity: 0.7;
 }
 
 /* Innholdet bak «Vis mer» */
@@ -733,20 +744,21 @@ li > span {
     align-items: center;
     justify-content: center;
     gap: var(--avstand-1);
-    min-height: var(--kontroll-hoyde);
-    padding: 0 var(--avstand-5);
+    min-height: var(--knapp-hoyde);
+    padding: 0 var(--avstand-4);
     border: 0;
     border-radius: var(--runding-full);
     background: var(--aksent-fyll);
     color: var(--pa-fyll);
     font: inherit;
-    font-size: var(--tekst-brod);
+    font-size: var(--tekst-knapp);
     font-weight: 600;
     line-height: 1.2;
     text-align: center;
     white-space: nowrap;
     cursor: pointer;
-    transition: filter var(--overgang), opacity var(--overgang), background-color var(--overgang);
+    transition: transform var(--overgang-vekst), filter var(--overgang), opacity var(--overgang),
+        background-color var(--overgang);
 }
 
 .knapp:hover {
@@ -765,14 +777,31 @@ li > span {
 }
 
 .knapp.liten {
-    min-height: var(--kontroll-hoyde-liten);
-    padding: 0 var(--avstand-4);
-    font-size: var(--tekst-under);
+    min-height: var(--knapp-hoyde-liten);
+    padding: 0 var(--avstand-3);
+    font-size: var(--tekst-knapp-liten);
+}
+
+/* Usynlig utvidelse av trykkflaten, så små knapper fortsatt er
+   minst 44 px å treffe med fingeren uten å se større ut */
+.knapp,
+.knapper > a:not(.knapp),
+.lytt summary {
+    position: relative;
 }
 
 @media (pointer: coarse) {
-    .knapp.liten {
-        min-height: var(--kontroll-hoyde);
+    .knapp::before,
+    .knapper > a:not(.knapp)::before,
+    .lytt summary::before {
+        content: "";
+        position: absolute;
+        inset: calc((var(--kontroll-hoyde) - var(--knapp-hoyde)) / -2) 0;
+    }
+
+    .knapp.liten::before,
+    .lytt summary::before {
+        inset: calc((var(--kontroll-hoyde) - var(--knapp-hoyde-liten)) / -2) calc(var(--avstand-1) * -1);
     }
 }
 
@@ -784,6 +813,29 @@ li > span {
 .fare {
     color: var(--fare);
 }
+/* Knappene vokser litt når musepekeren er over dem, og trykkes inn ved klikk.
+   Bare på enheter med mus, og ikke når «Reduser bevegelse» er på. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .knapp:hover,
+    .knapper > a:not(.knapp):hover,
+    summary:hover > .vis-mer,
+    .lytt summary:hover {
+        transform: scale(var(--skala-over));
+    }
+
+    .knapp:active,
+    .knapper > a:not(.knapp):active,
+    summary:active > .vis-mer,
+    .lytt summary:active {
+        transform: scale(var(--skala-trykk));
+    }
+
+    summary:hover > .vis-mer,
+    .lytt summary:hover {
+        filter: brightness(1.08);
+    }
+}
+
 
 .knapper {
     display: flex;
@@ -801,7 +853,7 @@ li > span {
     padding: 0 var(--avstand-3);
     border-radius: var(--runding-full);
     font-weight: 600;
-    transition: background-color var(--overgang);
+    transition: transform var(--overgang-vekst), background-color var(--overgang), opacity var(--overgang);
 }
 
 .knapper > a:not(.knapp):hover {
@@ -812,7 +864,7 @@ li > span {
 .knapper > a.fare {
     margin-left: auto;
     background: var(--fare-tone);
-    padding: 0 var(--avstand-5);
+    padding: 0 var(--avstand-4);
 }
 
 .knapper > a.fare:hover {
@@ -849,7 +901,8 @@ li > span {
 .skjema select {
     display: block;
     width: 100%;
-    min-height: var(--kontroll-hoyde);
+    min-height: var(--knapp-hoyde);
+    font-size: var(--tekst-knapp);
     padding: var(--avstand-2) var(--avstand-3);
     border: 1px solid var(--linje-sterk);
     border-radius: var(--runding);
@@ -945,10 +998,10 @@ li > span {
 }
 
 .skjema input[type="file"]::file-selector-button {
-    min-height: var(--kontroll-hoyde-liten);
+    min-height: var(--knapp-hoyde-liten);
     margin-right: var(--avstand-3);
-    padding: 0 var(--avstand-4);
-    font-size: var(--tekst-under);
+    padding: 0 var(--avstand-3);
+    font-size: var(--tekst-knapp-liten);
 }
 
 .skjema .helptext,
