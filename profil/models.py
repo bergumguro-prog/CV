@@ -1,4 +1,11 @@
+from io import BytesIO
+from pathlib import Path
+
+from django.core.files.base import ContentFile
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+from PIL import Image, ImageOps
 
 
 class Profil(models.Model):
@@ -231,3 +238,89 @@ class IdrettshendelseEgenskap(EgenskapKobling):
         constraints = [
             models.UniqueConstraint(fields=["idrettshendelse", "egenskap"], name="unik_idrettshendelse_egenskap")
         ]
+
+
+class Forsidebilde(models.Model):
+    """Et stort bilde i karusellen øverst på forsiden.
+
+    Bildet skaleres ned når det lastes opp, og en mindre utgave lagres for mobil.
+    """
+
+    STOR_BREDDE = 2400
+    LITEN_BREDDE = 1200
+
+    bilde = models.ImageField(
+        upload_to="forside/",
+        help_text="Liggende bilder passer best. Store bilder skaleres automatisk ned.",
+    )
+    bilde_liten = models.ImageField(upload_to="forside/", blank=True, editable=False)
+    bredde = models.PositiveIntegerField(default=0, editable=False)
+    hoyde = models.PositiveIntegerField(default=0, editable=False)
+    alt_tekst = models.CharField(
+        "alternativ tekst", max_length=200,
+        help_text="Beskriv bildet for dem som ikke kan se det, f.eks. «Utsikt over Trondheim fra Gråkallen».",
+    )
+    bildetekst = models.CharField(max_length=120, blank=True, help_text="Valgfri kort tekst som vises på bildet.")
+    rekkefolge = models.PositiveIntegerField("rekkefølge", default=0, help_text="Lavest tall vises først.")
+    aktiv = models.BooleanField(default=True, help_text="Fjern krysset for å skjule bildet uten å slette det.")
+
+    class Meta:
+        verbose_name = "forsidebilde"
+        verbose_name_plural = "forsidebilder"
+        ordering = ["rekkefolge", "pk"]
+
+    def __str__(self):
+        return self.alt_tekst
+
+    @property
+    def srcset(self):
+        """Begge størrelsene, så nettleseren selv velger den minste som er skarp nok."""
+        if not self.bilde_liten or self.bredde <= self.LITEN_BREDDE:
+            return f"{self.bilde.url} {self.bredde}w"
+        return f"{self.bilde_liten.url} {self.LITEN_BREDDE}w, {self.bilde.url} {self.bredde}w"
+
+    def save(self, *args, **kwargs):
+        nytt_bilde = bool(self.bilde) and not self.bilde._committed
+        gamle_filer = []
+        if nytt_bilde:
+            if self.pk:
+                gammel = Forsidebilde.objects.filter(pk=self.pk).first()
+                if gammel:
+                    gamle_filer = [gammel.bilde, gammel.bilde_liten]
+            self._skaler_bilde()
+        super().save(*args, **kwargs)
+        for fil in gamle_filer:
+            if fil:
+                fil.storage.delete(fil.name)
+
+    def _skaler_bilde(self):
+        with Image.open(self.bilde) as original:
+            # Mobilbilder lagres ofte liggende med en «roter»-merknad; snu dem riktig først
+            bilde = ImageOps.exif_transpose(original).convert("RGB")
+        navn = Path(self.bilde.name).stem
+        stor = _nedskalert(bilde, self.STOR_BREDDE)
+        self.bredde, self.hoyde = stor.size
+        self.bilde.save(f"{navn}.jpg", _som_jpeg(stor), save=False)
+        self.bilde_liten.save(f"{navn}-liten.jpg", _som_jpeg(_nedskalert(bilde, self.LITEN_BREDDE)), save=False)
+
+
+def _nedskalert(bilde, maks_bredde):
+    """Gjør bildet mindre hvis det er bredere enn maks_bredde, men aldri større."""
+    if bilde.width <= maks_bredde:
+        return bilde
+    hoyde = round(bilde.height * maks_bredde / bilde.width)
+    return bilde.resize((maks_bredde, hoyde), Image.Resampling.LANCZOS)
+
+
+def _som_jpeg(bilde):
+    fil = BytesIO()
+    bilde.save(fil, "JPEG", quality=82, optimize=True, progressive=True)
+    return ContentFile(fil.getvalue())
+
+
+@receiver(post_delete, sender=Forsidebilde)
+def slett_forsidebildefiler(sender, instance, **kwargs):
+    """Fjern filene når bildet slettes, så media-mappen ikke fylles opp."""
+    for fil in (instance.bilde, instance.bilde_liten):
+        if fil:
+            fil.storage.delete(fil.name)

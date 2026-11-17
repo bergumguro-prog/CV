@@ -11,6 +11,7 @@ from .models import (
     ErfaringEgenskap,
     Fag,
     Ferdighet,
+    Forsidebilde,
     Idrettshendelse,
     IdrettshendelseEgenskap,
     Idrettslag,
@@ -139,5 +140,6 @@ TYPER = {
         formsets=[("Egenskaper", "egenskaper", _egenskaper(Idrettshendelse, IdrettshendelseEgenskap))],
     ),
     "ferdighet": Type("ferdighet", Ferdighet, ["navn", "niva"]),
+    "forsidebilde": Type("forsidebilde", Forsidebilde, ["bilde", "alt_tekst", "bildetekst", "rekkefolge", "aktiv"]),
     "prosjekt": Type("prosjekt", Prosjekt, ["tittel", "dato", "beskrivelse", "lenke"], side="profil:prosjekter"),
 }

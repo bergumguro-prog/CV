@@ -8,18 +8,14 @@
     {% if nettsted_profil.om_meg %}<meta name="description" content="{{ nettsted_profil.om_meg|truncatechars:160 }}">{% endif %}
     {% if not sokbar %}<meta name="robots" content="noindex, nofollow">{% endif %}
     <link rel="stylesheet" href="{% static 'profil/style.css' %}">
+    {% block skript %}{% endblock %}
 </head>
 <body>
+    {% block topp %}
     <header>
-        {% with side=request.resolver_match.url_name %}
-        <nav>
-            <a href="{% url 'profil:forside' %}"{% if side == "forside" %} aria-current="page"{% endif %}>CV</a>
-            <a href="{% url 'profil:om_meg' %}"{% if side == "om_meg" %} aria-current="page"{% endif %}>Om meg</a>
-            <a href="{% url 'profil:prosjekter' %}"{% if side == "prosjekter" %} aria-current="page"{% endif %}>Prosjekter</a>
-            <a href="{% url 'profil:kontakt' %}"{% if side == "kontakt" %} aria-current="page"{% endif %}>Kontakt</a>
-        </nav>
-        {% endwith %}
+        {% include "profil/_nav.html" %}
     </header>
+    {% endblock %}
 
     <main>
         {% block content %}{% endblock %}

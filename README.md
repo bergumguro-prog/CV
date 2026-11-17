@@ -44,6 +44,16 @@ Etter 5 mislykkede innloggingsforsøk sperres IP-adressen i 1 time. Sperrer du d
 python manage.py axes_reset
 ```
 
+## Forsidebilder
+
+Øverst på forsiden kan det ligge en stor bildekarusell med navnet og tittelen din. Når man scroller, krymper den til et smalt banner med navnet og menyen. Uten bilder ser forsiden ut som vanlig.
+
+1. Logg inn og trykk **+ Legg til forsidebilde** (under navnet ditt på forsiden, eller oppe i karusellen når den finnes).
+2. Velg et bilde og skriv en **alternativ tekst** – en kort beskrivelse for dem som bruker skjermleser. Bildeteksten er valgfri og vises oppe til høyre på bildet.
+3. **Rekkefølge** bestemmer hvilket bilde som vises først (lavest tall først). Fjern krysset for **Aktiv** for å skjule et bilde uten å slette det.
+
+Liggende bilder fungerer best, siden de beskjæres til bredden av skjermen. Store bilder skaleres automatisk ned til 2400 px bredde, og en 1200 px-utgave lages for mobil. Bildene bytter av seg selv hvert 6. sekund, og besøkende kan pause, sveipe eller bruke piltastene. Skjulte bilder finner du igjen under **Forsidebilder** i admin.
+
 ## Publisering på PythonAnywhere
 
 1. Lag en gratis konto på [pythonanywhere.com](https://www.pythonanywhere.com) og åpne en **Bash console**.
@@ -65,6 +75,19 @@ python manage.py axes_reset
 5. Under **Web**: lag en ny web-app med *Manual configuration*, sett *Virtualenv* til `~/CV/venv`, og la WSGI-filen peke på `cv.settings` i `~/CV`.
 6. Under **Static files**: koble `/static/` til `~/CV/staticfiles` og `/media/` til `~/CV/media`.
 7. Skru på **Force HTTPS** og trykk **Reload**.
+
+### Oppdatere siden senere
+
+Etter å ha hentet nye endringer (f.eks. forsidebildene) kjører du dette i Bash-konsollen, og trykker **Reload** under **Web**:
+
+```bash
+cd ~/CV && source venv/bin/activate
+git pull
+python manage.py migrate          # nødvendig etter oppdateringer med nye modeller, som Forsidebilde
+python manage.py collectstatic
+```
+
+Bildene du laster opp havner i `~/CV/media/`. Sjekk at `/media/` er koblet til `~/CV/media` under **Static files** (punkt 6), ellers vises ikke forsidebildene og profilbildet når `DJANGO_DEBUG=False`.
 
 Innhold fra en lokal database kan flyttes med `python manage.py dumpdata profil --indent 2 > cv-data.json` lokalt og `python manage.py loaddata cv-data.json` på serveren. Profilbildet lastes opp på nytt i admin.
 

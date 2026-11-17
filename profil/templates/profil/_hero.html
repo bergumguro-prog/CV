@@ -1,0 +1,45 @@
+{# Stor bildekarusell øverst på forsiden. Krymper til et smalt banner med navnet og menyen når man scroller. #}
+<div class="hero-vakt" aria-hidden="true"></div>
+<header class="hero" id="forsidebilde">
+    {% include "profil/_nav.html" with banner_navn=profil.navn %}
+
+    <div class="hero-bilder" role="region" aria-roledescription="karusell" aria-label="Forsidebilder">
+        {% for b in forsidebilder %}
+            <figure class="hero-bilde{% if forloop.first %} aktiv{% endif %}" role="group" aria-roledescription="lysbilde" aria-label="{{ forloop.counter }} av {{ forsidebilder|length }}"{% if not forloop.first %} hidden{% endif %}>
+                <img src="{{ b.bilde.url }}" srcset="{{ b.srcset }}" sizes="100vw" width="{{ b.bredde }}" height="{{ b.hoyde }}" alt="{{ b.alt_tekst }}" decoding="async"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+                {% if b.bildetekst %}<figcaption>{{ b.bildetekst }}</figcaption>{% endif %}
+            </figure>
+        {% endfor %}
+    </div>
+    <div class="hero-toning" aria-hidden="true"></div>
+
+    <div class="hero-innhold">
+        <div class="hero-tekst">
+            {% if profil %}
+                {% if profil.bilde %}<img class="hero-portrett" src="{{ profil.bilde.url }}" alt="" width="72" height="72">{% endif %}
+                <h1>{{ profil.navn }}</h1>
+                {% if profil.tittel %}<p>{{ profil.tittel }}</p>{% endif %}
+            {% endif %}
+            {% if user.is_staff %}
+                <div class="hero-redigering">
+                    {% if profil %}<a class="knapp sekundar liten" href="{% url 'profil:rediger' 'profil' profil.pk %}">Rediger profil</a>{% endif %}
+                    {% for b in forsidebilder %}
+                        <a class="knapp sekundar liten" data-lysbilde="{{ forloop.counter0 }}" href="{% url 'profil:rediger' 'forsidebilde' b.pk %}"{% if not forloop.first %} hidden{% endif %}>Rediger bilde</a>
+                    {% endfor %}
+                    <a class="knapp sekundar liten" href="{% url 'profil:ny' 'forsidebilde' %}">+ Legg til forsidebilde</a>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if forsidebilder|length > 1 %}
+            <div class="hero-kontroller" hidden>
+                <div class="hero-prikker">
+                    {% for b in forsidebilder %}
+                        <button type="button" class="hero-prikk" data-lysbilde="{{ forloop.counter0 }}" aria-label="Vis bilde {{ forloop.counter }} av {{ forsidebilder|length }}"{% if forloop.first %} aria-current="true"{% endif %}></button>
+                    {% endfor %}
+                </div>
+                <button type="button" class="hero-pause" aria-label="Sett på pause"></button>
+            </div>
+        {% endif %}
+    </div>
+</header>

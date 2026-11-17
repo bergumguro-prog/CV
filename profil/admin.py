@@ -6,6 +6,7 @@ from .models import (
     ErfaringEgenskap,
     Fag,
     Ferdighet,
+    Forsidebilde,
     Idrettshendelse,
     IdrettshendelseEgenskap,
     Idrettslag,
@@ -104,3 +105,10 @@ class FerdighetAdmin(admin.ModelAdmin):
 @admin.register(Prosjekt)
 class ProsjektAdmin(admin.ModelAdmin):
     list_display = ["tittel", "dato", "lenke"]
+
+
+@admin.register(Forsidebilde)
+class ForsidebildeAdmin(admin.ModelAdmin):
+    list_display = ["alt_tekst", "bildetekst", "rekkefolge", "aktiv"]
+    list_editable = ["rekkefolge", "aktiv"]
+    readonly_fields = ["bredde", "hoyde"]
