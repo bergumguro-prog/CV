@@ -506,6 +506,13 @@ class ForsidebildeModellTester(ForsidebildeOppsett):
         bilde.delete()
         self.assertFalse(any(os.path.exists(f) for f in filer))
 
+    def test_fokus_er_midten_av_utsnittet(self):
+        bilde = self.nytt_bilde(bilde=lag_bilde(3200, 1800), utsnitt_x=50, utsnitt_y=25, utsnitt_bredde=50, utsnitt_hoyde=50)
+        self.assertEqual(bilde.fokus, (50.0, 50.0))  # det beskårne bildet er selve utsnittet
+        Forsidebilde.objects.update(bilde_stor="", bilde_liten="")
+        bilde.refresh_from_db()
+        self.assertEqual(bilde.fokus, (75.0, 50.0))  # uten utsnitt vises originalen, sentrert på rammen
+
     def test_kommandoen_lager_manglende_utsnitt(self):
         bilde = self.nytt_bilde()
         Forsidebilde.objects.update(bilde_stor="", bilde_liten="", generert_fra="")
@@ -618,6 +625,13 @@ class ForsidebildeVisningTester(ForsidebildeOppsett):
         # Prikker og pause-knapp når det er mer enn ett bilde
         self.assertContains(response, 'class="hero-prikk"', count=2)
         self.assertContains(response, 'class="hero-pause"')
+
+    def test_zoom_lag_rundt_hvert_bilde(self):
+        self.nytt_bilde()
+        self.nytt_bilde()
+        response = self.client.get(reverse("profil:forside"))
+        # Punktum, ikke komma, også med norsk språk, ellers blir CSS-en ugyldig
+        self.assertContains(response, '<div class="hero-zoom" style="--fokus-x: 50.00%; --fokus-y: 50.00%">', count=2)
 
     def test_ett_bilde_har_ingen_prikker(self):
         self.nytt_bilde()

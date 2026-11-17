@@ -1238,8 +1238,9 @@ html:has(.hero) {
     position: absolute;
     inset: 0;
     margin: 0;
+    overflow: hidden; /* zoomen klippes rent i kanten av bildet */
     opacity: 0;
-    transition: opacity 1.2s ease;
+    transition: opacity 1.2s ease; /* samme som OVERGANG i forside.js */
 }
 
 .hero-bilde.aktiv {
@@ -1253,7 +1254,37 @@ html:has(.hero) {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 50% 50%;
+    object-position: var(--fokus-x, 50%) var(--fokus-y, 50%);
+}
+
+/* Langsom zoom («Ken Burns») på et eget lag inni hvert bilde, adskilt fra
+   .hero-bilder som scroll-effekten flytter, så de to transformene aldri krasjer.
+   Zoomen går mot midten av det valgte utsnittet. forside.js starter den på nytt
+   for hvert nytt bilde, og pauser den når man scroller, ved pause eller skjult fane. */
+.hero-zoom {
+    position: absolute;
+    inset: 0;
+    transform-origin: var(--fokus-x, 50%) var(--fokus-y, 50%);
+}
+
+@keyframes hero-zoom {
+    from { transform: scale(1); }
+    to { transform: scale(1.03); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .hero-zoom.zoomer {
+        animation: hero-zoom var(--zoom-tid, 7.2s) linear both;
+    }
+
+    /* will-change bare på bildet som vises nå, så nettleseren ikke holder av minne til alle */
+    .hero-bilde.aktiv .hero-zoom.zoomer {
+        will-change: transform;
+    }
+
+    .hero.zoom-pause .hero-zoom {
+        animation-play-state: paused;
+    }
 }
 
 .hero-bilde figcaption {

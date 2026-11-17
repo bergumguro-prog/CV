@@ -6,7 +6,9 @@
     <div class="hero-bilder" role="region" aria-roledescription="karusell" aria-label="Forsidebilder">
         {% for b in forsidebilder %}
             <figure class="hero-bilde{% if forloop.first %} aktiv{% endif %}" role="group" aria-roledescription="lysbilde" aria-label="{{ forloop.counter }} av {{ forsidebilder|length }}"{% if not forloop.first %} hidden{% endif %}>
-                <img src="{{ b.vis_url }}" srcset="{{ b.srcset }}" sizes="100vw" width="{{ b.bredde }}" height="{{ b.hoyde }}" alt="{{ b.alt_tekst }}" decoding="async"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+                <div class="hero-zoom" style="--fokus-x: {{ b.fokus.0|stringformat:".2f" }}%; --fokus-y: {{ b.fokus.1|stringformat:".2f" }}%">
+                    <img src="{{ b.vis_url }}" srcset="{{ b.srcset }}" sizes="100vw" width="{{ b.bredde }}" height="{{ b.hoyde }}" alt="{{ b.alt_tekst }}" decoding="async"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+                </div>
                 {% if b.bildetekst %}<figcaption>{{ b.bildetekst }}</figcaption>{% endif %}
             </figure>
         {% endfor %}

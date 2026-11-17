@@ -320,6 +320,17 @@ class Forsidebilde(models.Model):
             return f"{self.bilde_stor.url} {self.bredde}w"
         return f"{self.bilde_liten.url} {self.LITEN_BREDDE}w, {self.bilde_stor.url} {self.bredde}w"
 
+    @property
+    def fokus(self):
+        """Midten av det valgte utsnittet, i prosent av bildet som vises: (x, y).
+
+        Det beskårne bildet er selve utsnittet, så der er midten alltid 50 %. Før
+        utsnittet er laget vises originalen, og da ligger midten der rammen står.
+        """
+        if self.bilde_stor or not self.har_utsnitt:
+            return 50.0, 50.0
+        return self.utsnitt_x + self.utsnitt_bredde / 2, self.utsnitt_y + self.utsnitt_hoyde / 2
+
     # ---- Utsnitt -----------------------------------------------------------------
 
     @property
