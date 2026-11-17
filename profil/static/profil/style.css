@@ -1,303 +1,784 @@
+/* =========================================================================
+   Designsystem
+   Rolig og presist, inspirert av Apples Human Interface Guidelines.
+   Alle mål ligger på et 4/8 px-rutenett, og alle farger går via variabler.
+   ========================================================================= */
+
 :root {
-    --fare: #dc2626;
-    --bakgrunn: #fafaf9;
-    --tekst: #1c1917;
-    --dempet: #57534e;
-    --linje: #e7e5e4;
-    --aksent: #2563eb;
+    color-scheme: light dark;
+
+    /* Farger – lyst tema. Alle tekstpar holder WCAG AA (≥ 4,5:1). */
+    --bakgrunn: #f5f5f7;                      /* sidebakgrunn (gruppert) */
+    --flate: #ffffff;                         /* kort og grupperte lister */
+    --flate-trykk: #e8e8ed;                   /* rad mens den trykkes */
+    --fyll: rgba(118, 118, 128, 0.12);        /* nøytral fyll bak nestet innhold */
+    --tekst: #1d1d1f;
+    --dempet: #6e6e73;                        /* sekundær tekst */
+    --linje: rgba(60, 60, 67, 0.16);          /* hårfin skillelinje */
+    --linje-sterk: rgba(60, 60, 67, 0.3);     /* kant rundt skjemafelt */
+    --aksent: #0062c4;                        /* lenker og aksenttekst */
+    --aksent-fyll: #0071e3;                   /* bakgrunn i primærknapper */
+    --aksent-tone: rgba(0, 113, 227, 0.1);    /* tonet bakgrunn i sekundærknapper */
+    --fokus: rgba(0, 113, 227, 0.32);         /* ring rundt aktive skjemafelt */
+    --fare: #c4000f;
+    --fare-fyll: #d70015;
+    --fare-tone: rgba(215, 0, 21, 0.08);
+    --pa-fyll: #ffffff;                       /* tekst på fargede knapper */
+    --toppfelt: rgba(245, 245, 247, 0.8);
+    --bilde-kant: rgba(0, 0, 0, 0.06);
+
+    /* Typografi: SF Pro først, deretter systemfonter */
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui,
+        "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --tekst-stor-tittel: clamp(1.75rem, 1.45rem + 1.4vw, 2.125rem); /* 28 → 34 px */
+    --tekst-tittel: 1.375rem;      /* 22 px, seksjoner */
+    --tekst-overskrift: 1.0625rem; /* 17 px, semibold, punkter */
+    --tekst-brod: 1.0625rem;       /* 17 px */
+    --tekst-under: 0.9375rem;      /* 15 px, datoer, etiketter */
+    --tekst-fotnote: 0.8125rem;    /* 13 px, hjelpetekst */
+
+    /* Avstand – 4/8 px-rutenett */
+    --avstand-1: 4px;
+    --avstand-2: 8px;
+    --avstand-3: 12px;
+    --avstand-4: 16px;
+    --avstand-5: 24px;
+    --avstand-6: 32px;
+    --avstand-7: 48px;
+    --avstand-8: 64px;
+
+    /* Former */
+    --runding-liten: 8px;
+    --runding: 12px;
+    --runding-stor: 16px;
+    --runding-full: 999px;
+    --skygge: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+    /* Mål */
+    --innhold-bredde: 45rem;       /* 720 px, ca. 70 tegn per linje */
+    --kontroll-hoyde: 44px;        /* minste trykkflate (HIG) */
+    --kontroll-hoyde-liten: 32px;
+    --toppfelt-hoyde: 52px;
+
+    /* Bevegelse */
+    --overgang: 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
+/* Mørkt tema */
 @media (prefers-color-scheme: dark) {
     :root {
-        --bakgrunn: #1c1917;
-        --tekst: #f5f5f4;
-        --dempet: #a8a29e;
-        --linje: #44403c;
-        --aksent: #60a5fa;
-        --fare: #f87171;
+        --bakgrunn: #000000;
+        --flate: #1c1c1e;
+        --flate-trykk: #2c2c2e;
+        --fyll: rgba(118, 118, 128, 0.24);
+        --tekst: #f5f5f7;
+        --dempet: #98989d;
+        --linje: rgba(84, 84, 88, 0.6);
+        --linje-sterk: rgba(84, 84, 88, 0.9);
+        --aksent: #409cff;
+        --aksent-fyll: #0071e3;
+        --aksent-tone: rgba(64, 156, 255, 0.16);
+        --fokus: rgba(64, 156, 255, 0.45);
+        --fare: #ff6961;
+        --fare-fyll: #d70015;
+        --fare-tone: rgba(255, 105, 97, 0.14);
+        --toppfelt: rgba(0, 0, 0, 0.72);
+        --bilde-kant: rgba(255, 255, 255, 0.12);
+        --skygge: none;
     }
 }
 
-* {
+/* =========================================================================
+   Grunnlag
+   ========================================================================= */
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Ankerlenker (f.eks. #erfaring) skal ikke havne under det faste toppfeltet */
+    scroll-padding-top: calc(var(--toppfelt-hoyde) + var(--avstand-4));
 }
 
 body {
     margin: 0;
     background: var(--bakgrunn);
     color: var(--tekst);
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    line-height: 1.6;
+    font-family: var(--font);
+    font-size: var(--tekst-brod);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
-header,
-main,
-footer {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 16px;
-}
-
-header {
-    padding-top: 24px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--linje);
-}
-
-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 20px;
-}
-
-nav a:first-child {
-    font-weight: 700;
-    margin-right: auto;
+p {
+    margin: 0 0 var(--avstand-3);
 }
 
 a {
     color: var(--aksent);
     text-decoration: none;
+    text-underline-offset: 0.15em;
 }
 
 a:hover {
     text-decoration: underline;
 }
 
-main {
-    padding-top: 32px;
-    padding-bottom: 48px;
+:focus-visible {
+    outline: 2px solid var(--aksent);
+    outline-offset: 2px;
+    border-radius: var(--runding-liten);
 }
+
+/* =========================================================================
+   Typografi
+   ========================================================================= */
+
+h1,
+h2,
+h3,
+h4 {
+    margin: 0;
+    color: var(--tekst);
+    text-wrap: balance;
+}
+
+h1 {
+    margin-bottom: var(--avstand-2);
+    font-size: var(--tekst-stor-tittel);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.022em;
+}
+
+h2 {
+    font-size: var(--tekst-tittel);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.016em;
+}
+
+h3 {
+    font-size: var(--tekst-overskrift);
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+}
+
+h4 {
+    margin: var(--avstand-4) 0 var(--avstand-2);
+    color: var(--dempet);
+    font-size: var(--tekst-fotnote);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+/* =========================================================================
+   Sideoppsett
+   ========================================================================= */
+
+main,
+footer {
+    max-width: var(--innhold-bredde);
+    margin: 0 auto;
+    padding-inline: max(var(--avstand-4), env(safe-area-inset-left));
+}
+
+main {
+    padding-top: var(--avstand-6);
+    padding-bottom: var(--avstand-8);
+}
+
+main > p,
+main > ul {
+    max-width: 65ch;
+}
+
+/* Toppfelt: fast øverst, gjennomskinnelig med uskarp bakgrunn */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bakgrunn);
+    border-bottom: 1px solid var(--linje);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    header {
+        background: var(--toppfelt);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        backdrop-filter: saturate(180%) blur(20px);
+    }
+}
+
+nav {
+    display: flex;
+    align-items: center;
+    gap: var(--avstand-1);
+    max-width: var(--innhold-bredde);
+    min-height: var(--toppfelt-hoyde);
+    margin: 0 auto;
+    padding-inline: max(var(--avstand-2), env(safe-area-inset-left));
+}
+
+nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--kontroll-hoyde);
+    min-height: var(--kontroll-hoyde);
+    padding-inline: var(--avstand-2);
+    border-radius: var(--runding-liten);
+    color: var(--dempet);
+    font-size: var(--tekst-under);
+    transition: color var(--overgang);
+}
+
+nav a:hover {
+    color: var(--tekst);
+    text-decoration: none;
+}
+
+nav a[aria-current="page"] {
+    color: var(--tekst);
+    font-weight: 600;
+}
+
+/* «CV» til venstre fungerer som navnet på nettstedet */
+nav a:first-child {
+    margin-right: auto;
+    color: var(--tekst);
+    font-size: var(--tekst-overskrift);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--avstand-2) var(--avstand-4);
+    padding-top: var(--avstand-4);
+    padding-bottom: var(--avstand-6);
+    border-top: 1px solid var(--linje);
+    color: var(--dempet);
+    font-size: var(--tekst-fotnote);
+}
+
+footer p {
+    margin: 0;
+}
+
+footer form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--avstand-1) var(--avstand-3);
+}
+
+footer form a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--kontroll-hoyde);
+    min-height: var(--kontroll-hoyde);
+}
+
+/* =========================================================================
+   Forside: bilde, navn og lydkort
+   ========================================================================= */
 
 .intro {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 24px;
+    gap: var(--avstand-4) var(--avstand-5);
 }
 
 .intro img {
-    width: 140px;
-    height: 140px;
+    flex: none;
+    width: 128px;
+    height: 128px;
     border-radius: 50%;
     object-fit: cover;
+    /* Hårfin kant så bildet ikke flyter ut i bakgrunnen, særlig i mørkt tema */
+    box-shadow: 0 0 0 1px var(--bilde-kant);
+}
+
+.intro > div {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.intro h1 {
+    margin-bottom: var(--avstand-1);
 }
 
 .intro p {
-    margin: 0;
+    margin: 0 0 var(--avstand-3);
     color: var(--dempet);
+    font-size: var(--tekst-brod);
+}
+
+.intro p:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 480px) {
+    .intro img {
+        width: 96px;
+        height: 96px;
+    }
 }
 
 .lytt {
-    margin-top: 24px;
-    padding: 16px;
-    border: 1px solid var(--linje);
-    border-radius: 12px;
+    margin-top: var(--avstand-6);
+    padding: var(--avstand-4);
+    border-radius: var(--runding-stor);
+    background: var(--flate);
+    box-shadow: var(--skygge);
 }
 
 .lytt h2 {
-    margin: 0 0 12px;
-    padding: 0;
-    border: 0;
-    font-size: 1.1rem;
+    margin: 0 0 var(--avstand-3);
+    font-size: var(--tekst-overskrift);
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
 .lytt audio {
+    display: block;
     width: 100%;
+    height: var(--kontroll-hoyde);
+}
+
+.lytt details {
+    margin-top: var(--avstand-2);
 }
 
 .lytt summary {
-    margin-top: 8px;
-    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--avstand-1);
+    min-height: var(--kontroll-hoyde);
     color: var(--aksent);
-    font-size: 0.9rem;
-}
-
-h1 {
-    font-size: 2rem;
-    margin: 0 0 8px;
-}
-
-h2 {
-    margin-top: 40px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--linje);
-}
-
-/* Punkter i CV-en: bare overskriften vises, resten ligger bak «Vis mer» */
-.punkt {
-    padding: 10px 0;
-    border-bottom: 1px solid var(--linje);
-}
-
-.punkt > details > summary,
-.punkt > .rad,
-.under > summary {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 2px 10px;
+    font-size: var(--tekst-under);
     list-style: none;
     cursor: pointer;
 }
 
+.lytt summary::-webkit-details-marker {
+    display: none;
+}
+
+.lytt details > :not(summary) {
+    color: var(--dempet);
+    font-size: var(--tekst-under);
+}
+
+.lytt details > p:last-child {
+    margin-bottom: 0;
+}
+
+/* =========================================================================
+   Seksjoner
+   ========================================================================= */
+
+.seksjon-topp {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--avstand-2) var(--avstand-4);
+    margin-bottom: var(--avstand-3);
+}
+
+section > .seksjon-topp {
+    margin-top: var(--avstand-7);
+}
+
+.seksjon-topp h1,
+.seksjon-topp h2 {
+    margin: 0;
+}
+
+/* Sidetittel (h1) på undersidene får litt mer luft under seg */
+main > .seksjon-topp,
+main > h1 {
+    margin-bottom: var(--avstand-4);
+}
+
+main > h1 + .skjema {
+    margin-top: var(--avstand-5);
+}
+
+/* Underoverskrift i en gruppert liste («Lag og klubber») */
+.underseksjon {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--avstand-2);
+    margin: var(--avstand-5) 0 var(--avstand-2);
+    padding-left: var(--avstand-4);
+}
+
+.seksjon-topp + .underseksjon {
+    margin-top: 0;
+}
+
+.underseksjon h3 {
+    color: var(--dempet);
+    font-size: var(--tekst-fotnote);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+/* =========================================================================
+   Punkter i CV-en: grupperte lister med «Vis mer»
+   ========================================================================= */
+
+.punkt {
+    position: relative;
+    padding: var(--avstand-3) var(--avstand-4);
+    background: var(--flate);
+    transition: background-color var(--overgang);
+}
+
+/* Første og siste punkt i en gruppe får avrundede hjørner */
+:not(.punkt) + .punkt {
+    border-top-left-radius: var(--runding);
+    border-top-right-radius: var(--runding);
+}
+
+.punkt:not(:has(+ .punkt)) {
+    border-bottom-left-radius: var(--runding);
+    border-bottom-right-radius: var(--runding);
+}
+
+/* Hårfin skillelinje, trukket inn fra venstre som i iOS */
+.punkt + .punkt::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: var(--avstand-4);
+    border-top: 1px solid var(--linje);
+}
+
+.punkt > details > summary,
 .punkt > .rad {
-    cursor: default;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: var(--avstand-3);
+    min-height: calc(var(--kontroll-hoyde) - 2 * var(--avstand-3));
+}
+
+.punkt > details > summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+.punkt > details > summary > h3,
+.punkt > .rad > h3 {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.punkt > details > summary > .ar,
+.punkt > .rad > .ar {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.punkt > details > summary > .vis-mer {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+    margin-top: var(--avstand-1);
+}
+
+.punkt h3 {
+    overflow-wrap: break-word;
+}
+
+/* Smal skjerm: tittelen får hele bredden, datoen flytter ned ved «Vis mer» */
+@media (max-width: 480px) {
+    .punkt > details > summary > h3 {
+        grid-column: 1 / -1;
+    }
+
+    .punkt > details > summary > .ar {
+        grid-row: 2;
+        margin-top: var(--avstand-1);
+    }
+
+    .punkt > details > summary > .vis-mer {
+        grid-column: 1;
+    }
 }
 
 .punkt summary::-webkit-details-marker {
     display: none;
 }
 
-.punkt h3 {
-    margin: 0;
-    font-size: 1rem;
+/* Hele raden lyser svakt opp mens den trykkes */
+.punkt:has(> details > summary:active) {
+    background: var(--flate-trykk);
+}
+
+.punkt > details > summary:focus-visible {
+    outline-offset: var(--avstand-1);
+}
+
+.ar {
+    color: var(--dempet);
+    font-size: var(--tekst-under);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: right;
+}
+
+/* «Vis mer» med en pil som vrir seg når innholdet åpnes */
+.vis-mer {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--avstand-1);
+    color: var(--aksent);
+    font-size: var(--tekst-under);
+    line-height: 1.35;
 }
 
 .vis-mer::after {
     content: "Vis mer";
-    font-size: 0.8rem;
-    color: var(--aksent);
 }
 
 details[open] > summary > .vis-mer::after {
     content: "Vis mindre";
 }
 
-summary:hover .vis-mer::after {
+.vis-mer::before,
+.lytt summary::after {
+    content: "";
+    flex: none;
+    order: 1;
+    width: 0.75em;
+    height: 0.75em;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4.5 2.5 8 6l-3.5 3.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4.5 2.5 8 6l-3.5 3.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: transform var(--overgang);
+}
+
+details[open] > summary > .vis-mer::before,
+.lytt details[open] > summary::after {
+    transform: rotate(90deg);
+}
+
+summary:hover .vis-mer,
+.lytt summary:hover {
     text-decoration: underline;
 }
 
-.ar {
-    margin-left: auto;
-    color: var(--dempet);
-    font-size: 0.85rem;
-    white-space: nowrap;
-}
-
+/* Innholdet bak «Vis mer» */
 .mer-innhold {
-    margin-top: 8px;
-    padding-left: 12px;
-    border-left: 2px solid var(--linje);
+    padding-top: var(--avstand-3);
+    padding-bottom: var(--avstand-1);
 }
 
-.mer-innhold > p:first-child {
+.mer-innhold > :first-child {
     margin-top: 0;
 }
 
-h4 {
-    margin: 16px 0 4px;
-    font-size: 0.95rem;
-}
-
-ul.utvidbar {
-    list-style: none;
-    padding-left: 0;
-}
-
-ul.utvidbar li {
-    padding: 4px 0;
-}
-
-.under .mer-innhold {
-    font-size: 0.95rem;
-}
-
-ul {
-    padding-left: 20px;
-}
-
-li span {
-    color: var(--dempet);
-    font-size: 0.9rem;
-}
-
-/* Seksjonsoverskrift med «+ Legg til» */
-.seksjon-topp {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-section > .seksjon-topp {
-    margin-top: 40px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--linje);
-}
-
-.seksjon-topp h1,
-.seksjon-topp h2 {
-    margin: 0;
-    padding: 0;
-    border: 0;
-}
-
-.underseksjon {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 20px;
-}
-
-.underseksjon h4 {
-    margin: 0;
-    color: var(--dempet);
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+.mer-innhold > :last-child {
+    margin-bottom: 0;
 }
 
 .rolle {
     font-weight: 600;
 }
 
-/* Redigering (vises bare for innloggede) */
+/* Fag og egenskaper inne i et punkt */
+ul.utvidbar {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+ul.utvidbar li {
+    display: flex;
+    align-items: center;
+    min-height: var(--kontroll-hoyde);
+    border-top: 1px solid var(--linje);
+    font-size: var(--tekst-under);
+}
+
+ul.utvidbar li:first-child {
+    border-top: 0;
+}
+
+ul.utvidbar details.under {
+    flex: 1;
+    min-width: 0;
+}
+
+.under > summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--avstand-1) var(--avstand-3);
+    padding-block: var(--avstand-3);
+    list-style: none;
+    cursor: pointer;
+}
+
+.under > summary::-webkit-details-marker {
+    display: none;
+}
+
+.under .mer-innhold {
+    margin-bottom: var(--avstand-3);
+    padding: var(--avstand-3);
+    border-radius: var(--runding-liten);
+    background: var(--fyll);
+    font-size: var(--tekst-under);
+}
+
+/* Ferdigheter og kontaktinfo: enkle grupperte lister */
+section > ul:not(.utvidbar),
+main > ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-radius: var(--runding);
+    background: var(--flate);
+    box-shadow: var(--skygge);
+}
+
+section > ul:not(.utvidbar) > li,
+main > ul > li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--avstand-1) var(--avstand-3);
+    min-height: var(--kontroll-hoyde);
+    margin-left: var(--avstand-4);
+    padding: var(--avstand-2) var(--avstand-4) var(--avstand-2) 0;
+    border-top: 1px solid var(--linje);
+}
+
+section > ul:not(.utvidbar) > li:first-child,
+main > ul > li:first-child {
+    border-top: 0;
+}
+
+/* Nivået på ferdigheten ligger til høyre, i sekundærfarge */
+li > span {
+    margin-left: auto;
+    color: var(--dempet);
+    font-size: var(--tekst-under);
+}
+
+/* =========================================================================
+   Redigering (vises bare for innloggede)
+   ========================================================================= */
+
 .punkt.redigerbar {
     display: grid;
-    grid-template-columns: 1fr auto;
-    column-gap: 12px;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: var(--avstand-3);
 }
 
 .rediger {
-    color: var(--dempet);
-    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--kontroll-hoyde-liten);
+    margin-block: calc((var(--kontroll-hoyde-liten) - 1lh) / -2);
+    color: var(--aksent);
+    font-size: var(--tekst-under);
 }
 
-.knapp {
-    display: inline-block;
-    padding: 8px 16px;
-    border: 1px solid var(--aksent);
-    border-radius: 8px;
-    background: var(--aksent);
-    color: var(--bakgrunn);
+.punkt > .rediger {
+    align-self: baseline;
+}
+
+@media (pointer: coarse) {
+    .rediger {
+        min-height: var(--kontroll-hoyde);
+        padding-inline: var(--avstand-1);
+        margin-block: calc((var(--kontroll-hoyde) - 1lh) / -2);
+    }
+}
+
+/* =========================================================================
+   Knapper: én familie med lik høyde, form og vekt
+   ========================================================================= */
+
+.knapp,
+.skjema input[type="file"]::file-selector-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--avstand-1);
+    min-height: var(--kontroll-hoyde);
+    padding: 0 var(--avstand-5);
+    border: 0;
+    border-radius: var(--runding-full);
+    background: var(--aksent-fyll);
+    color: var(--pa-fyll);
     font: inherit;
+    font-size: var(--tekst-brod);
     font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
     cursor: pointer;
+    transition: filter var(--overgang), opacity var(--overgang), background-color var(--overgang);
 }
 
 .knapp:hover {
     text-decoration: none;
-    opacity: 0.9;
+    filter: brightness(1.08);
 }
 
-.knapp.sekundar {
-    background: transparent;
+.knapp:active {
+    opacity: 0.7;
+}
+
+.knapp.sekundar,
+.skjema input[type="file"]::file-selector-button {
+    background: var(--aksent-tone);
     color: var(--aksent);
 }
 
 .knapp.liten {
-    padding: 2px 12px;
-    font-size: 0.85rem;
+    min-height: var(--kontroll-hoyde-liten);
+    padding: 0 var(--avstand-4);
+    font-size: var(--tekst-under);
+}
+
+@media (pointer: coarse) {
+    .knapp.liten {
+        min-height: var(--kontroll-hoyde);
+    }
 }
 
 .knapp.fare-knapp {
-    border-color: var(--fare);
-    background: var(--fare);
+    background: var(--fare-fyll);
+    color: var(--pa-fyll);
 }
 
 .fare {
@@ -308,14 +789,48 @@ section > .seksjon-topp {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
-    margin-top: 24px;
+    gap: var(--avstand-3);
+    margin-top: var(--avstand-5);
 }
 
-/* Skjemaer */
+/* Tekstlenker i knapperaden («Avbryt», «Slett») blir rene tekstknapper */
+.knapper > a:not(.knapp) {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--kontroll-hoyde);
+    padding: 0 var(--avstand-3);
+    border-radius: var(--runding-full);
+    font-weight: 600;
+    transition: background-color var(--overgang);
+}
+
+.knapper > a:not(.knapp):hover {
+    background: var(--aksent-tone);
+    text-decoration: none;
+}
+
+.knapper > a.fare {
+    margin-left: auto;
+    background: var(--fare-tone);
+    padding: 0 var(--avstand-5);
+}
+
+.knapper > a.fare:hover {
+    background: var(--fare-tone);
+    filter: brightness(1.08);
+}
+
+.knapper > a:not(.knapp):active {
+    opacity: 0.7;
+}
+
+/* =========================================================================
+   Skjemaer
+   ========================================================================= */
+
 .skjema > div,
 .skjema-rad > div {
-    margin-bottom: 14px;
+    margin-bottom: var(--avstand-4);
 }
 
 .skjema.smal {
@@ -324,89 +839,192 @@ section > .seksjon-topp {
 
 .skjema label {
     display: block;
-    margin-bottom: 4px;
-    font-size: 0.9rem;
+    margin-bottom: var(--avstand-1);
+    font-size: var(--tekst-under);
     font-weight: 600;
 }
 
-.skjema input:not([type="checkbox"]):not([type="file"]),
+.skjema input:not([type="checkbox"]):not([type="file"]):not([type="hidden"]),
 .skjema textarea,
 .skjema select {
+    display: block;
     width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--linje);
-    border-radius: 6px;
-    background: var(--bakgrunn);
+    min-height: var(--kontroll-hoyde);
+    padding: var(--avstand-2) var(--avstand-3);
+    border: 1px solid var(--linje-sterk);
+    border-radius: var(--runding);
+    background: var(--flate);
     color: var(--tekst);
     font: inherit;
+    line-height: 1.4;
+    transition: border-color var(--overgang), box-shadow var(--overgang);
+}
+
+.skjema input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.skjema input::-webkit-date-and-time-value {
+    text-align: left;
+}
+
+.skjema input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
 }
 
 .skjema textarea {
-    min-height: 90px;
+    min-height: calc(5lh + 2 * var(--avstand-2));
+    resize: vertical;
+}
+
+.skjema input::placeholder,
+.skjema textarea::placeholder {
+    color: var(--dempet);
+}
+
+.skjema input:focus,
+.skjema textarea:focus,
+.skjema select:focus {
+    border-color: var(--aksent);
+    outline: none;
+    box-shadow: 0 0 0 4px var(--fokus);
 }
 
 .skjema input:disabled {
     opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.skjema [aria-invalid="true"] {
+    border-color: var(--fare);
+}
+
+.skjema [aria-invalid="true"]:focus {
+    border-color: var(--fare);
+    box-shadow: 0 0 0 4px var(--fare-tone);
+}
+
+/* Avkrysningsbokser: etikett og boks på én linje, med stor trykkflate */
+.skjema input[type="checkbox"] {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--aksent-fyll);
+    cursor: pointer;
 }
 
 .skjema div:has(> input[type="checkbox"]) {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    column-gap: var(--avstand-3);
+    min-height: var(--kontroll-hoyde);
 }
 
 .skjema div:has(> input[type="checkbox"]) label {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--kontroll-hoyde);
     margin: 0;
+    cursor: pointer;
+}
+
+.skjema div:has(> input[type="checkbox"]) > .helptext {
+    flex-basis: 100%;
+}
+
+.skjema input[type="file"] {
+    max-width: 100%;
+    color: var(--dempet);
+    font: inherit;
+    font-size: var(--tekst-under);
+}
+
+.skjema input[type="file"]::file-selector-button {
+    min-height: var(--kontroll-hoyde-liten);
+    margin-right: var(--avstand-3);
+    padding: 0 var(--avstand-4);
+    font-size: var(--tekst-under);
 }
 
 .skjema .helptext,
 .hjelp {
+    display: block;
+    margin: 0 0 var(--avstand-2);
     color: var(--dempet);
-    font-size: 0.8rem;
+    font-size: var(--tekst-fotnote);
+    line-height: 1.4;
 }
 
 .skjema fieldset {
-    margin: 24px 0;
-    padding: 12px 16px;
-    border: 1px solid var(--linje);
-    border-radius: 8px;
+    margin: var(--avstand-6) 0 0;
+    padding: var(--avstand-4);
+    border: 0;
+    border-radius: var(--runding-stor);
+    background: var(--flate);
+    box-shadow: var(--skygge);
 }
 
+/* Overskriften ligger over kortet, som i en gruppert liste */
 .skjema legend {
-    padding: 0 6px;
-    font-weight: 700;
+    float: left;
+    width: 100%;
+    margin: 0 0 var(--avstand-3);
+    padding: 0;
+    font-size: var(--tekst-overskrift);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.skjema legend + * {
+    clear: both;
+}
+
+.skjema fieldset input:not([type="checkbox"]):not([type="file"]):not([type="hidden"]),
+.skjema fieldset textarea,
+.skjema fieldset select {
+    background: var(--bakgrunn);
 }
 
 .skjema-rad {
-    padding-bottom: 6px;
-    margin-bottom: 14px;
-    border-bottom: 1px dashed var(--linje);
+    margin-bottom: var(--avstand-4);
+    border-bottom: 1px solid var(--linje);
+}
+
+.skjema fieldset .hjelp {
+    margin: 0;
 }
 
 .errorlist {
-    margin: 4px 0;
+    margin: 0 0 var(--avstand-2);
     padding: 0;
     list-style: none;
     color: var(--fare);
-    font-size: 0.85rem;
+    font-size: var(--tekst-fotnote);
+    font-weight: 500;
 }
 
-footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding-top: 16px;
-    padding-bottom: 32px;
-    border-top: 1px solid var(--linje);
-    color: var(--dempet);
-    font-size: 0.85rem;
+.errorlist.nonfield,
+.errorlist.nonform {
+    padding: var(--avstand-3) var(--avstand-4);
+    border-radius: var(--runding);
+    background: var(--fare-tone);
+    font-size: var(--tekst-under);
 }
 
-footer form {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
+/* =========================================================================
+   Redusert bevegelse
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
 }
