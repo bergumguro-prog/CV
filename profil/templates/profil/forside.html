@@ -72,7 +72,7 @@
 
             {% if idrettslag or user.is_staff %}
                 <div class="underseksjon" id="idrettslag">
-                    <h4>Lag og klubber</h4>
+                    <h3>Lag og klubber</h3>
                     {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'idrettslag' %}">+ Legg til</a>{% endif %}
                 </div>
                 {% for lag in idrettslag %}
@@ -82,7 +82,7 @@
 
             {% if idrettshendelser or user.is_staff %}
                 <div class="underseksjon" id="idrettshendelse">
-                    <h4>Konkurranser og løp</h4>
+                    <h3>Konkurranser og løp</h3>
                     {% if user.is_staff %}<a class="knapp liten" href="{% url 'profil:ny' 'idrettshendelse' %}">+ Legg til</a>{% endif %}
                 </div>
                 {% for hendelse in idrettshendelser %}

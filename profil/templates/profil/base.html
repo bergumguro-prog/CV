@@ -11,12 +11,14 @@
 </head>
 <body>
     <header>
+        {% with side=request.resolver_match.url_name %}
         <nav>
-            <a href="{% url 'profil:forside' %}">CV</a>
-            <a href="{% url 'profil:om_meg' %}">Om meg</a>
-            <a href="{% url 'profil:prosjekter' %}">Prosjekter</a>
-            <a href="{% url 'profil:kontakt' %}">Kontakt</a>
+            <a href="{% url 'profil:forside' %}"{% if side == "forside" %} aria-current="page"{% endif %}>CV</a>
+            <a href="{% url 'profil:om_meg' %}"{% if side == "om_meg" %} aria-current="page"{% endif %}>Om meg</a>
+            <a href="{% url 'profil:prosjekter' %}"{% if side == "prosjekter" %} aria-current="page"{% endif %}>Prosjekter</a>
+            <a href="{% url 'profil:kontakt' %}"{% if side == "kontakt" %} aria-current="page"{% endif %}>Kontakt</a>
         </nav>
+        {% endwith %}
     </header>
 
     <main>
