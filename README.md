@@ -89,6 +89,8 @@ python manage.py lag_forsidebilder   # lager utsnitt for forsidebilder som mangl
 python manage.py collectstatic --noinput
 ```
 
+`collectstatic` må kjøres etter hver oppdatering. Den gir CSS- og JavaScript-filene innholdet sitt i filnavnet (f.eks. `style.3f9a2c1b.css`), så besøkende alltid får den nye utgaven i stedet for en gammel kopi fra nettleseren.
+
 Bildene du laster opp havner i `~/CV/media/`. Sjekk at `/media/` er koblet til `~/CV/media` under **Static files** (punkt 6), ellers vises ikke forsidebildene og profilbildet når `DJANGO_DEBUG=False`.
 
 Innhold fra en lokal database kan flyttes med `python manage.py dumpdata profil --indent 2 > cv-data.json` lokalt og `python manage.py loaddata cv-data.json` på serveren. Profilbildet lastes opp på nytt i admin.

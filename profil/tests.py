@@ -732,3 +732,26 @@ class ForsidebildeRedigeringTester(ForsidebildeOppsett):
         self.client.force_login(self.admin)
         response = self.client.get(reverse("profil:forside"))
         self.assertContains(response, reverse("profil:ny", args=["forsidebilde"]))
+
+
+class StatiskeFilerTester(TestCase):
+    """CSS og JavaScript skal få nytt filnavn når innholdet endres, så nettleseren ikke bruker en gammel kopi."""
+
+    def test_filnavn_med_innhold_etter_collectstatic(self):
+        import re
+
+        from django.core.management import call_command
+
+        mappe = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, mappe)
+        with override_settings(STATIC_ROOT=mappe, DEBUG=False):
+            call_command("collectstatic", interactive=False, verbosity=0)
+            response = self.client.get(reverse("profil:forside"))
+        self.assertRegex(response.content.decode(), r'href="/static/profil/style\.[0-9a-f]{12}\.css"')
+
+    def test_siden_virker_uten_collectstatic(self):
+        mappe = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, mappe)
+        with override_settings(STATIC_ROOT=mappe, DEBUG=False):
+            response = self.client.get(reverse("profil:forside"))
+        self.assertContains(response, 'href="/static/profil/style.css"')
