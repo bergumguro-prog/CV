@@ -4,8 +4,11 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.forms import BaseInlineFormSet, inlineformset_factory, modelform_factory
+from django.forms.widgets import Script
 
 from .models import (
+    MIN_BREDDE,
+    UTSNITT_FORHOLD,
     Egenskap,
     Erfaring,
     ErfaringEgenskap,
@@ -87,6 +90,59 @@ def _egenskaper(forelder, kobling):
     )
 
 
+UTSNITT_FELT = ["utsnitt_x", "utsnitt_y", "utsnitt_bredde", "utsnitt_hoyde"]
+
+
+class UtsnittWidget(forms.ClearableFileInput):
+    """Filfelt med forhåndsvisning og en ramme for å velge utsnittet (se utsnitt.js)."""
+
+    template_name = "profil/widgets/utsnitt.html"
+
+    def __init__(self, original_url="", attrs=None):
+        super().__init__(attrs)
+        self.original_url = original_url
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"].update({
+            "original_url": self.original_url,
+            "forhold": UTSNITT_FORHOLD,
+            "min_bredde": MIN_BREDDE,
+        })
+        return context
+
+    @property
+    def media(self):
+        return forms.Media(css={"all": ["profil/utsnitt.css"]}, js=[Script("profil/utsnitt.js", defer=True)])
+
+
+class ForsidebildeSkjema(forms.ModelForm):
+    """Brukes både på «Rediger»-siden og i admin."""
+
+    class Meta:
+        model = Forsidebilde
+        fields = ["bilde", *UTSNITT_FELT, "alt_tekst", "bildetekst", "rekkefolge", "aktiv"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        original = self.instance.bilde.url if self.instance.pk and self.instance.bilde else ""
+        if "bilde" in self.fields:
+            widget = UtsnittWidget(original_url=original)
+            widget.is_required = self.fields["bilde"].required  # ellers vises en «Fjern»-boks
+            self.fields["bilde"].widget = widget
+        for navn in UTSNITT_FELT:
+            if navn in self.fields:
+                self.fields[navn].widget = forms.HiddenInput()
+
+    def clean(self):
+        data = super().clean()
+        # Nytt bilde uten nytt utsnitt (f.eks. uten JavaScript): bruk et midtstilt utsnitt
+        if "bilde" in self.changed_data and not set(UTSNITT_FELT) & set(self.changed_data):
+            for navn in UTSNITT_FELT:
+                data[navn] = None
+        return data
+
+
 FagFormSet = inlineformset_factory(
     Utdanning, Fag, fields=["emnekode", "navn", "beskrivelse"], extra=1, can_delete=True,
 )
@@ -101,12 +157,14 @@ class Type:
     felt: list[str]
     side: str = "profil:forside"
     formsets: list[tuple[str, str, type]] = field(default_factory=list)
+    grunnskjema: type = forms.ModelForm
 
     def skjema(self):
         datoer = [f for f in self.felt if isinstance(self.modell._meta.get_field(f), models.DateField)]
         widgets = {f: forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d") for f in datoer}
-        form = PeriodeForm if "til_dato" in self.felt else forms.ModelForm
-        return modelform_factory(self.modell, form=form, fields=self.felt, widgets=widgets)
+        form = PeriodeForm if "til_dato" in self.felt else self.grunnskjema
+        # Uten datofelt sendes ingen widgets, så grunnskjemaets egne widgets beholdes
+        return modelform_factory(self.modell, form=form, fields=self.felt, widgets=widgets or None)
 
 
 TYPER = {
@@ -140,6 +198,8 @@ TYPER = {
         formsets=[("Egenskaper", "egenskaper", _egenskaper(Idrettshendelse, IdrettshendelseEgenskap))],
     ),
     "ferdighet": Type("ferdighet", Ferdighet, ["navn", "niva"]),
-    "forsidebilde": Type("forsidebilde", Forsidebilde, ["bilde", "alt_tekst", "bildetekst", "rekkefolge", "aktiv"]),
+    "forsidebilde": Type(
+        "forsidebilde", Forsidebilde, ForsidebildeSkjema.Meta.fields, grunnskjema=ForsidebildeSkjema,
+    ),
     "prosjekt": Type("prosjekt", Prosjekt, ["tittel", "dato", "beskrivelse", "lenke"], side="profil:prosjekter"),
 }

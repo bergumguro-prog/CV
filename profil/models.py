@@ -1,7 +1,10 @@
+import hashlib
 from io import BytesIO
 from pathlib import Path
 
+from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
@@ -240,22 +243,51 @@ class IdrettshendelseEgenskap(EgenskapKobling):
         ]
 
 
+# Formatet på utsnittet til forsidebildene (bredde, høyde). Brukes av Python, skjemaet,
+# beskjæringsverktøyet og CSS-en (via context processoren), så det står bare her.
+UTSNITT_FORHOLD = (16, 9)
+
+# Minste utsnitt i piksler, så bildet blir skarpt også på store skjermer
+MIN_BREDDE = 1200
+MIN_HOYDE = round(MIN_BREDDE * UTSNITT_FORHOLD[1] / UTSNITT_FORHOLD[0])  # 675
+
+# Hvor mye utsnittet kan avvike fra 16:9 før det avvises (avrunding i nettleseren)
+FORHOLD_TOLERANSE = 0.02
+
+_prosent = [MinValueValidator(0), MaxValueValidator(100)]
+
+
 class Forsidebilde(models.Model):
     """Et stort bilde i karusellen øverst på forsiden.
 
-    Bildet skaleres ned når det lastes opp, og en mindre utgave lagres for mobil.
+    Originalen lagres uendret. Ut fra den lages et beskåret utsnitt i 16:9 i to
+    størrelser, bare når bildet eller utsnittet endres.
     """
 
     STOR_BREDDE = 2400
     LITEN_BREDDE = 1200
 
     bilde = models.ImageField(
-        upload_to="forside/",
-        help_text="Liggende bilder passer best. Store bilder skaleres automatisk ned.",
+        upload_to="forside/original/",
+        help_text=f"Liggende bilder passer best. Minst {MIN_BREDDE} × {MIN_HOYDE} piksler. "
+                  "Velg utsnittet i forhåndsvisningen under.",
     )
+    original_bredde = models.PositiveIntegerField(default=0, editable=False)
+    original_hoyde = models.PositiveIntegerField(default=0, editable=False)
+
+    # Utsnittet, i prosent av originalen (så det virker uansett bildets størrelse)
+    utsnitt_x = models.FloatField(null=True, blank=True, validators=_prosent)
+    utsnitt_y = models.FloatField(null=True, blank=True, validators=_prosent)
+    utsnitt_bredde = models.FloatField(null=True, blank=True, validators=_prosent)
+    utsnitt_hoyde = models.FloatField(null=True, blank=True, validators=_prosent)
+
+    # Ferdig beskårne bilder, laget av save()
+    bilde_stor = models.ImageField(upload_to="forside/", blank=True, editable=False)
     bilde_liten = models.ImageField(upload_to="forside/", blank=True, editable=False)
     bredde = models.PositiveIntegerField(default=0, editable=False)
     hoyde = models.PositiveIntegerField(default=0, editable=False)
+    generert_fra = models.CharField(max_length=64, blank=True, editable=False)
+
     alt_tekst = models.CharField(
         "alternativ tekst", max_length=200,
         help_text="Beskriv bildet for dem som ikke kan se det, f.eks. «Utsikt over Trondheim fra Gråkallen».",
@@ -272,55 +304,181 @@ class Forsidebilde(models.Model):
     def __str__(self):
         return self.alt_tekst
 
+    # ---- Til malene --------------------------------------------------------------
+
+    @property
+    def vis_url(self):
+        """Det beskårne bildet, eller originalen hvis utsnittet ikke er laget ennå."""
+        return self.bilde_stor.url if self.bilde_stor else self.bilde.url
+
     @property
     def srcset(self):
         """Begge størrelsene, så nettleseren selv velger den minste som er skarp nok."""
+        if not self.bilde_stor:
+            return f"{self.bilde.url} {self.original_bredde or self.bredde}w"
         if not self.bilde_liten or self.bredde <= self.LITEN_BREDDE:
-            return f"{self.bilde.url} {self.bredde}w"
-        return f"{self.bilde_liten.url} {self.LITEN_BREDDE}w, {self.bilde.url} {self.bredde}w"
+            return f"{self.bilde_stor.url} {self.bredde}w"
+        return f"{self.bilde_liten.url} {self.LITEN_BREDDE}w, {self.bilde_stor.url} {self.bredde}w"
+
+    # ---- Utsnitt -----------------------------------------------------------------
+
+    @property
+    def har_utsnitt(self):
+        return None not in (self.utsnitt_x, self.utsnitt_y, self.utsnitt_bredde, self.utsnitt_hoyde)
+
+    def sett_midtstilt_utsnitt(self):
+        """Største mulige 16:9-utsnitt midt i bildet."""
+        self.utsnitt_x, self.utsnitt_y, self.utsnitt_bredde, self.utsnitt_hoyde = midtstilt_utsnitt(
+            self.original_bredde, self.original_hoyde
+        )
+
+    def clean(self):
+        if not self.bilde:
+            return  # «Feltet er påkrevd» kommer fra skjemaet
+        if self._nytt_original():
+            try:
+                self.original_bredde, self.original_hoyde = originalstorrelse(self.bilde)
+            except OSError:
+                raise ValidationError({"bilde": "Filen er ikke et bilde som kan leses."})
+            if self.original_bredde < MIN_BREDDE or self.original_hoyde < MIN_HOYDE:
+                raise ValidationError({"bilde": (
+                    f"Bildet er for lite ({self.original_bredde} × {self.original_hoyde} piksler). "
+                    f"Det må være minst {MIN_BREDDE} × {MIN_HOYDE} piksler for å bli skarpt på store skjermer."
+                )})
+        if not self.har_utsnitt:
+            self.sett_midtstilt_utsnitt()
+            return
+        feil = utsnittsfeil(self.utsnitt_x, self.utsnitt_y, self.utsnitt_bredde, self.utsnitt_hoyde,
+                            self.original_bredde, self.original_hoyde)
+        if feil:
+            raise ValidationError({"bilde": feil})
+
+    # ---- Lagring -----------------------------------------------------------------
+
+    def _nytt_original(self):
+        return bool(self.bilde) and not self.bilde._committed
+
+    def _signatur(self):
+        """Hva de beskårne bildene er laget av. Endres den, må de lages på nytt."""
+        verdier = f"{self.bilde.name}|{self.utsnitt_x:.4f}|{self.utsnitt_y:.4f}|" \
+                  f"{self.utsnitt_bredde:.4f}|{self.utsnitt_hoyde:.4f}"
+        return hashlib.sha256(verdier.encode()).hexdigest()[:16]
 
     def save(self, *args, **kwargs):
-        nytt_bilde = bool(self.bilde) and not self.bilde._committed
-        gamle_filer = []
-        if nytt_bilde:
-            if self.pk:
-                gammel = Forsidebilde.objects.filter(pk=self.pk).first()
-                if gammel:
-                    gamle_filer = [gammel.bilde, gammel.bilde_liten]
-            self._skaler_bilde()
-        super().save(*args, **kwargs)
-        for fil in gamle_filer:
-            if fil:
-                fil.storage.delete(fil.name)
+        gammel = Forsidebilde.objects.filter(pk=self.pk).first() if self.pk else None
+        if self._nytt_original():
+            self.original_bredde, self.original_hoyde = originalstorrelse(self.bilde)
+        elif not self.original_bredde and self.bilde:
+            self.original_bredde, self.original_hoyde = originalstorrelse(self.bilde)
+        if not self.har_utsnitt:
+            self.sett_midtstilt_utsnitt()
 
-    def _skaler_bilde(self):
-        with Image.open(self.bilde) as original:
+        super().save(*args, **kwargs)  # lagrer originalen, så den har et endelig filnavn
+
+        if self.bilde and (self._signatur() != self.generert_fra or not self.bilde_stor):
+            # Navnene må hentes nå: filfeltene får nye navn når utsnittet lagres
+            gamle = [fil.name for fil in (self.bilde_stor, self.bilde_liten) if fil]
+            self._lag_utsnitt()
+            super().save(update_fields=["bilde_stor", "bilde_liten", "bredde", "hoyde", "generert_fra"])
+            _slett(self.bilde.storage, gamle, behold=[self.bilde_stor.name, self.bilde_liten.name, self.bilde.name])
+
+        if gammel and gammel.bilde and gammel.bilde.name != self.bilde.name:
+            _slett(self.bilde.storage, [gammel.bilde.name])
+
+    def _lag_utsnitt(self):
+        with self.bilde.open("rb") as fil, Image.open(fil) as original:
             # Mobilbilder lagres ofte liggende med en «roter»-merknad; snu dem riktig først
             bilde = ImageOps.exif_transpose(original).convert("RGB")
-        navn = Path(self.bilde.name).stem
-        stor = _nedskalert(bilde, self.STOR_BREDDE)
+        b, h = bilde.size
+        boks = (
+            round(self.utsnitt_x / 100 * b),
+            round(self.utsnitt_y / 100 * h),
+            round((self.utsnitt_x + self.utsnitt_bredde) / 100 * b),
+            round((self.utsnitt_y + self.utsnitt_hoyde) / 100 * h),
+        )
+        utsnitt = bilde.crop(boks)
+        stor = _i_format(utsnitt, min(self.STOR_BREDDE, utsnitt.width))
+        liten = _i_format(utsnitt, min(self.LITEN_BREDDE, stor.width))
+
+        signatur = self._signatur()
+        navn = f"{Path(self.bilde.name).stem}-{signatur[:8]}"
+        self.bilde_stor.save(f"{navn}-{stor.width}.webp", _som_webp(stor), save=False)
+        self.bilde_liten.save(f"{navn}-{liten.width}.webp", _som_webp(liten), save=False)
         self.bredde, self.hoyde = stor.size
-        self.bilde.save(f"{navn}.jpg", _som_jpeg(stor), save=False)
-        self.bilde_liten.save(f"{navn}-liten.jpg", _som_jpeg(_nedskalert(bilde, self.LITEN_BREDDE)), save=False)
+        self.generert_fra = signatur
 
 
-def _nedskalert(bilde, maks_bredde):
-    """Gjør bildet mindre hvis det er bredere enn maks_bredde, men aldri større."""
-    if bilde.width <= maks_bredde:
+def originalstorrelse(fil):
+    """Bredde og høyde slik bildet faktisk vises, altså etter EXIF-rotasjon."""
+    lagret = fil._committed
+    fil.open("rb")
+    fil.seek(0)
+    try:
+        with Image.open(fil) as bilde:
+            bredde, hoyde = bilde.size
+            orientering = bilde.getexif().get(0x0112, 1)
+    finally:
+        if lagret:
+            fil.close()  # en ny opplasting holdes åpen til den er lagret
+        else:
+            fil.seek(0)
+    return (hoyde, bredde) if orientering in (5, 6, 7, 8) else (bredde, hoyde)
+
+
+def midtstilt_utsnitt(bredde, hoyde):
+    """Største 16:9-utsnitt midt i et bilde, i prosent: (x, y, bredde, høyde)."""
+    if not bredde or not hoyde:
+        return 0.0, 0.0, 100.0, 100.0
+    forhold = UTSNITT_FORHOLD[0] / UTSNITT_FORHOLD[1]
+    b = min(bredde, hoyde * forhold)
+    h = b / forhold
+    return (
+        (bredde - b) / 2 / bredde * 100,
+        (hoyde - h) / 2 / hoyde * 100,
+        b / bredde * 100,
+        h / hoyde * 100,
+    )
+
+
+def utsnittsfeil(x, y, b, h, bredde, hoyde):
+    """Feilmelding hvis utsnittet ikke kan brukes, ellers None. Alle mål i prosent."""
+    margin = 0.01
+    if b <= 0 or h <= 0 or x < -margin or y < -margin or x + b > 100 + margin or y + h > 100 + margin:
+        return "Utsnittet går utenfor bildet. Flytt eller gjør rammen mindre."
+    if not bredde or not hoyde:
+        return None
+    forhold = (b * bredde) / (h * hoyde)
+    onsket = UTSNITT_FORHOLD[0] / UTSNITT_FORHOLD[1]
+    if abs(forhold / onsket - 1) > FORHOLD_TOLERANSE:
+        return f"Utsnittet må ha formatet {UTSNITT_FORHOLD[0]}:{UTSNITT_FORHOLD[1]}."
+    if b / 100 * bredde < MIN_BREDDE - 1:
+        return (f"Utsnittet er for lite ({round(b / 100 * bredde)} piksler bredt). "
+                f"Det må være minst {MIN_BREDDE} piksler bredt for å bli skarpt.")
+    return None
+
+
+def _i_format(bilde, bredde):
+    """Skaler til gitt bredde med nøyaktig 16:9, så alle utsnitt får samme form."""
+    hoyde = round(bredde * UTSNITT_FORHOLD[1] / UTSNITT_FORHOLD[0])
+    if bilde.size == (bredde, hoyde):
         return bilde
-    hoyde = round(bilde.height * maks_bredde / bilde.width)
-    return bilde.resize((maks_bredde, hoyde), Image.Resampling.LANCZOS)
+    return bilde.resize((bredde, hoyde), Image.Resampling.LANCZOS)
 
 
-def _som_jpeg(bilde):
+def _som_webp(bilde):
     fil = BytesIO()
-    bilde.save(fil, "JPEG", quality=82, optimize=True, progressive=True)
+    bilde.save(fil, "WEBP", quality=82, method=5)
     return ContentFile(fil.getvalue())
+
+
+def _slett(lager, navn, behold=()):
+    for fil in navn:
+        if fil and fil not in behold:
+            lager.delete(fil)
 
 
 @receiver(post_delete, sender=Forsidebilde)
 def slett_forsidebildefiler(sender, instance, **kwargs):
-    """Fjern filene når bildet slettes, så media-mappen ikke fylles opp."""
-    for fil in (instance.bilde, instance.bilde_liten):
-        if fil:
-            fil.storage.delete(fil.name)
+    """Fjern original og utsnitt når bildet slettes, så media-mappen ikke fylles opp."""
+    filer = [instance.bilde, instance.bilde_stor, instance.bilde_liten]
+    _slett(instance.bilde.storage, [fil.name for fil in filer if fil])

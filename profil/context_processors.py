@@ -1,6 +1,6 @@
 from django.conf import settings
 
-from .models import Profil
+from .models import UTSNITT_FORHOLD, Profil
 
 
 def nettsted(request):
@@ -8,4 +8,6 @@ def nettsted(request):
     return {
         "nettsted_profil": Profil.objects.first(),
         "sokbar": settings.SOKBAR,
+        # Formatet på forsidebildene, til CSS-en (f.eks. «16 / 9»)
+        "utsnitt_forhold": f"{UTSNITT_FORHOLD[0]} / {UTSNITT_FORHOLD[1]}",
     }

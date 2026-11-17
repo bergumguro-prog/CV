@@ -137,6 +137,13 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Statiske filer får innholdet i filnavnet (style.3f9a2c1b.css), så nettlesere aldri
+# bruker en gammel CSS- eller JavaScript-fil etter en oppdatering. Krever collectstatic.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "cv.statiske_filer.StatiskeFiler"},
+}
+
 # Om søkemotorer får ta med siden. Av som standard; slå på med DJANGO_SOKBAR=True
 SOKBAR = os.environ.get("DJANGO_SOKBAR", "False") == "True"
 

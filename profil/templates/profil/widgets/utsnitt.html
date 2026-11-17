@@ -1,0 +1,30 @@
+{% include "django/forms/widgets/clearable_file_input.html" %}
+{# Beskjæringsverktøyet. Skjult til et bilde er valgt; utsnitt.js gjør resten. #}
+<div class="utsnitt" data-felt="{{ widget.name }}" data-forhold="{{ widget.forhold.0 }}/{{ widget.forhold.1 }}" data-min-bredde="{{ widget.min_bredde }}"{% if widget.original_url %} data-original="{{ widget.original_url }}"{% endif %} style="--utsnitt-forhold: {{ widget.forhold.0 }} / {{ widget.forhold.1 }}" hidden>
+    <p class="utsnitt-hjelp" id="{{ widget.attrs.id }}_utsnitt_hjelp">
+        Velg hva som skal vises: dra rammen for å flytte den, og dra hjørnene for å endre størrelsen.
+        Med tastaturet flytter piltastene rammen, og + og − endrer størrelsen.
+    </p>
+    <p class="utsnitt-feil" role="alert" hidden></p>
+    <div class="utsnitt-flate">
+        <img class="utsnitt-bilde" alt="Forhåndsvisning av bildet" draggable="false">
+        <div class="utsnitt-ramme" tabindex="0" role="group" aria-roledescription="utsnitt" aria-label="Utsnitt {{ widget.forhold.0 }}:{{ widget.forhold.1 }}" aria-describedby="{{ widget.attrs.id }}_utsnitt_hjelp">
+            <span class="utsnitt-hjorne" data-hjorne="oppe venstre"></span>
+            <span class="utsnitt-hjorne" data-hjorne="oppe hoyre"></span>
+            <span class="utsnitt-hjorne" data-hjorne="nede venstre"></span>
+            <span class="utsnitt-hjorne" data-hjorne="nede hoyre"></span>
+        </div>
+    </div>
+    <p class="utsnitt-status" aria-live="polite"></p>
+    <div class="utsnitt-banner">
+        <p>Slik blir den smale stripen øverst når man har scrollet ned:</p>
+        <figure>
+            <canvas data-visning="datamaskin" width="1280" height="64"></canvas>
+            <figcaption>Datamaskin</figcaption>
+        </figure>
+        <figure>
+            <canvas data-visning="mobil" width="390" height="56"></canvas>
+            <figcaption>Mobil</figcaption>
+        </figure>
+    </div>
+</div>
