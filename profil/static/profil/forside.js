@@ -2,6 +2,7 @@
 // - Bytter bilde av seg selv hvert 6. sekund, med pause-knapp (WCAG 2.2.2)
 // - Sveip, piltaster og prikker for å bytte manuelt
 // - Pauser når karusellen er krympet til banner, eller fanen er skjult
+// - Langsom zoom («Ken Burns») på bildet som vises, bare når karusellen er i full størrelse
 // - Reserveløsning for scroll-effekten i nettlesere uten CSS scroll-drevne animasjoner
 (() => {
     "use strict";
@@ -10,6 +11,7 @@
     if (!hero) return;
 
     const INTERVALL = 6000;
+    const OVERGANG = 1200; // overtoningen mellom bildene, samme som i style.css
     const SVEIP_TERSKEL = 40; // piksler før et sveip teller
 
     const lysbilder = [...hero.querySelectorAll(".hero-bilde")];
@@ -27,11 +29,17 @@
     let fokusInne = false;
     let pekerOver = false;
     let tidtaker = null;
+    let vedToppen = true; // karusellen er i full størrelse (ikke begynt å krympe)
+
+    // Zoomen varer like lenge som et bilde vises, pluss overtoningen ut
+    hero.style.setProperty("--zoom-tid", `${INTERVALL + OVERGANG}ms`);
 
     // ---- Bytte bilde -----------------------------------------------------------
 
     function vis(indeks) {
+        const forrige = aktiv;
         aktiv = (indeks + lysbilder.length) % lysbilder.length;
+        if (aktiv !== forrige) startZoom(lysbilder[aktiv]);
         lysbilder.forEach((bilde, i) => {
             const erAktiv = i === aktiv;
             bilde.hidden = false;
@@ -43,6 +51,28 @@
             else prikk.removeAttribute("aria-current");
         });
         redigerLenker.forEach((lenke, i) => { lenke.hidden = i !== aktiv; });
+    }
+
+    // ---- Langsom zoom -------------------------------------------------------------
+    // Det nye bildet starter zoomen fra 1,0. Det forrige beholder sin zoom mens det
+    // tones ut, så ingenting hopper. Selve animasjonen ligger i style.css.
+
+    function startZoom(lysbilde) {
+        const zoom = lysbilde.querySelector(".hero-zoom");
+        if (!zoom) return;
+        zoom.classList.remove("zoomer");
+        void zoom.offsetWidth; // start animasjonen på nytt
+        zoom.classList.add("zoomer");
+    }
+
+    function zoomSkalGa() {
+        const karusellGar = lysbilder.length < 2 || (onskerAvspilling && !fokusInne && !pekerOver);
+        return vedToppen && !document.hidden && karusellGar;
+    }
+
+    function oppdaterZoom() {
+        // Pause fryser zoomen der den er, uten å hoppe tilbake
+        hero.classList.toggle("zoom-pause", !zoomSkalGa());
     }
 
     // ---- Automatisk avspilling --------------------------------------------------
@@ -63,6 +93,7 @@
         }
         // Skjermlesere får beskjed om nytt bilde bare når det er brukeren som bytter
         bilder.setAttribute("aria-live", onskerAvspilling ? "off" : "polite");
+        oppdaterZoom();
     }
 
     function byttManuelt(indeks) {
@@ -137,10 +168,11 @@
     if (vakt && "IntersectionObserver" in window) {
         new IntersectionObserver(([inngang]) => {
             samlet = !inngang.isIntersecting;
+            vedToppen = inngang.intersectionRatio >= 0.99; // har ikke begynt å scrolle
             hero.classList.toggle("samlet", samlet);
             hero.classList.toggle("halvveis", inngang.intersectionRatio < 0.5);
             oppdaterAvspilling();
-        }, { threshold: [0, 0.5, 1] }).observe(vakt);
+        }, { threshold: [0, 0.5, 0.99, 1] }).observe(vakt);
     }
 
     // ---- Reserveløsning for scroll-effekten -------------------------------------
@@ -168,5 +200,7 @@
         window.addEventListener("resize", () => { mal(); planlegg(); }, { passive: true });
     }
 
+    document.addEventListener("visibilitychange", oppdaterZoom);
+    if (lysbilder.length) startZoom(lysbilder[aktiv]);
     oppdaterAvspilling();
 })();
